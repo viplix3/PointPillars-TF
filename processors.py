@@ -23,25 +23,53 @@ class DataProcessor(Parameters):
     def __init__(self):
         super(DataProcessor, self).__init__()
         anchor_dims = np.array(self.anchor_dims, dtype=np.float32)
-        self.anchor_dims = anchor_dims[:, 0:3]
-        self.anchor_z = anchor_dims[:, 3]
-        self.anchor_yaw = anchor_dims[:, 4]
+        self.anchor_dims = anchor_dims[:, 0:3] # length, width, height
+        self.anchor_z = anchor_dims[:, 3] # z-center
+        self.anchor_yaw = anchor_dims[:, 4] # yaw-angle
         # Counts may be used to make statistic about how well the anchor boxes fit the objects
         self.pos_cnt, self.neg_cnt = 0, 0
 
     @staticmethod
     def transform_labels_into_lidar_coordinates(labels: List[Label3D], R: np.ndarray, t: np.ndarray):
-        transformed = []
+        transformed = [] # Creating transformes list but returning labels
         for label in labels:
-            label.centroid = label.centroid @ np.linalg.inv(R).T - t
-            label.dimension = label.dimension[[2, 1, 0]]
-            label.yaw -= np.pi / 2
+            # @ -> Matrix multiplication
+            label.centroid = label.centroid @ np.linalg.inv(R).T - t # Why transposing the inversed orthogonal matrix? Where is Camera rotation handling?
+            label.dimension = label.dimension[[2, 1, 0]] # h, w, l -> w, l, h
+            label.yaw -= np.pi / 2 # Maping negative and positive angles on the same loc, not sure why
             while label.yaw < -np.pi:
                 label.yaw += (np.pi * 2)
             while label.yaw > np.pi:
                 label.yaw -= (np.pi * 2)
             transformed.append(label)
         return labels
+
+    @staticmethod
+    def camera_to_lidar(labels: List[Label3D], P: np.ndarray, R: np.ndarray, V2C: np.ndarray):
+        # TODO: Yaw angle correction and mapping
+        for idx in range(len(labels)):
+            label_centroid = label.centroid # (x, y, z) of BB in camera coordinates (in meters)
+            label.dimension = label.dimension[[2, 1, 0]] # h, w, l -> l, w, h
+            label_centroid_rectified = np.array(list(*label_centroid, 1))
+
+            # Transforming 3x3 rotation matrix into 4x4 rotation matrix
+            R_rectification = np.zeros((4, 4))
+            R_rectification[:3, :3] = R
+            R_rectification[3, 3] = 1
+            label_centroid_rectified = np.matmul(np.linalg.inv(R_rectificaton), label_centroid_rectified)
+            label_centroid_rectified = np.matmul(self.inverse_rigid_trans(V2C), label_centroid_rectified)
+            label_centroid_rectified = label_centroid_rectified[:3]
+            label.centroid = label_centroid_rectified
+    
+    @staticmethod
+    def inverse_rigid_trans(Tr):
+        ''' Inverse a rigid body transform matrix (3x4 as [R|t])
+            [R'|-R't; 0|1]
+        '''
+        inv_Tr = np.zeros_like(Tr)  # 3x4
+        inv_Tr[0:3, 0:3] = np.transpose(Tr[0:3, 0:3])
+        inv_Tr[0:3, 3] = np.dot(-np.transpose(Tr[0:3, 0:3]), Tr[0:3, 3])
+        return inv_Tr
 
     def make_point_pillars(self, points: np.ndarray):
 
@@ -163,9 +191,15 @@ class SimpleDataGenerator(DataProcessor, Sequence):
             if self.label_files is not None:
                 label = self.data_reader.read_label(self.label_files[i])
                 R, t = self.data_reader.read_calibration(self.calibration_files[i])
+
+                # P2, R0, Tr_velo_to_cam = self.data_reader.read_calibration(self.calibration_files[i]) # Correct calibration reading
+
                 # Labels are transformed into the lidar coordinate bounding boxes
                 # Label has 7 values, centroid, dimensions and yaw value.
                 label_transformed = self.transform_labels_into_lidar_coordinates(label, R, t)
+
+                # label_transformed = self.camera_to_lidar(label, P2, R0, Te_velo_to_cam) # Correct transformation
+
                 # These definitions can be found in point_pillars.cpp file
                 # We are splitting a 10 dim vector that contains this information.
                 occupancy_, position_, size_, angle_, heading_, classification_ = self.make_ground_truth(
