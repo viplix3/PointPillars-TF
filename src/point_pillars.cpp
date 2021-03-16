@@ -48,6 +48,7 @@ pybind11::tuple createPillars(pybind11::array_t<float> points,
         throw std::runtime_error("numpy array with shape (n, 4) expected (n being the number of points)");
     }
 
+    // Hasmap for holding indices
     std::unordered_map<std::pair<uint32_t, uint32_t>, std::vector<PillarPoint>, IntPairHash> map;
 
     for (int i = 0; i < points.shape()[0]; ++i)
@@ -59,6 +60,7 @@ pybind11::tuple createPillars(pybind11::array_t<float> points,
             continue;
         }
 
+        // Point-cloud discretization on the x-y plane
         auto xIndex = static_cast<uint32_t>(std::floor((points.at(i, 0) - xMin) / xStep));
         auto yIndex = static_cast<uint32_t>(std::floor((points.at(i, 1) - yMin) / yStep));
 
@@ -72,6 +74,7 @@ pybind11::tuple createPillars(pybind11::array_t<float> points,
             0,
         };
 
+        // Pushing the PointPillar object into the hasmap, hash will be generated on the basis of discritized x, y coordinate
         map[{xIndex, yIndex}].emplace_back(p);
     }
 
@@ -79,20 +82,22 @@ pybind11::tuple createPillars(pybind11::array_t<float> points,
     pybind11::array_t<int> indices;
 
     tensor.resize({1, maxPillars, maxPointsPerPillar, 7});
-    indices.resize({1, maxPillars, 3});
+    indices.resize({1, maxPillars, 3}); // Will hold the discretized indices of the pillar
 
     int pillarId = 0;
-    for (auto& pair: map)
+    for (auto& pair: map) // Iterating through the hash-map
     {
         if (pillarId >= maxPillars)
         {
+            // Number of populated pillars exceeds the maximum allowed number of pillars
             break;
         }
 
         float xMean = 0;
         float yMean = 0;
         float zMean = 0;
-        for (const auto& p: pair.second)
+        // Iterating through all the points for current hash (or pillar) for mean coordinate calculation
+        for (const auto& p: pair.second) // pair.first -> hash, pair.second -> value
         {
             xMean += p.x;
             yMean += p.y;
@@ -102,6 +107,7 @@ pybind11::tuple createPillars(pybind11::array_t<float> points,
         yMean /= pair.second.size();
         zMean /= pair.second.size();
 
+        // Updating distance from calculated mean for each point of current hash (pillar)
         for (auto& p: pair.second)
         {
             p.xc = p.x - xMean;
@@ -109,20 +115,25 @@ pybind11::tuple createPillars(pybind11::array_t<float> points,
             p.zc = p.z - zMean;
         }
 
+        // Discretizing the mean coordinates of the current hash (pillar)
         auto xIndex = static_cast<int>(std::floor((xMean - xMin) / xStep));
         auto yIndex = static_cast<int>(std::floor((yMean - yMin) / yStep));
         auto zMid   = (zMax - zMin) * 0.5f;
+
+        // Updating the indices of the pillar for current pillar id
         indices.mutable_at(0, pillarId, 1) = xIndex;
         indices.mutable_at(0, pillarId, 2) = yIndex;
 
         int pointId = 0;
-        for (const auto& p: pair.second)
+        for (const auto& p: pair.second) // Iterating through all the points of current hash (pillar)
         {
             if (pointId >= maxPointsPerPillar)
             {
+                // Number of populated points exceeds the maximum allowed number of points per pillar
                 break;
             }
 
+            // Point data population inside the pillar
             tensor.mutable_at(0, pillarId, pointId, 0) = p.x - (xIndex * xStep + xMin);
             tensor.mutable_at(0, pillarId, pointId, 1) = p.y - (yIndex * yStep + yMin);
             tensor.mutable_at(0, pillarId, pointId, 2) = p.z - zMid;
