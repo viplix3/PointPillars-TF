@@ -47,16 +47,20 @@ class DataProcessor(Parameters):
     @staticmethod
     def camera_to_lidar(labels: List[Label3D], P: np.ndarray, R: np.ndarray, V2C: np.ndarray):
         for label in labels:
+            # print("================================================== Before transformation/Camera coordinate frame==================================================")
+            # print("x: {}\ty: {}\tz: {}\tl: {}\tw: {}\th: {}\tyaw: {}\tclass: {}".format(label.centroid[0], label.centroid[1], 
+            #     label.centroid[2], label.dimension[2], label.dimension[1], label.dimension[0], label.yaw, label.classification))
+
             label_centroid = label.centroid # (x, y, z) of BB in camera coordinates (in meters)
             label.dimension = label.dimension[[2, 1, 0]] # h, w, l -> l, w, h
-            label_centroid_rectified = np.array(label_centroid.append(1))
+            label_centroid_rectified = np.array([label_centroid[0], label_centroid[1], label_centroid[2], 1])
 
             # Transforming 3x3 rotation matrix into 4x4 rotation matrix
             R_rectification = np.zeros((4, 4))
             R_rectification[:3, :3] = R
             R_rectification[3, 3] = 1
-            label_centroid_rectified = np.matmul(np.linalg.inv(R_rectificaton), label_centroid_rectified)
-            label_centroid_rectified = np.matmul(self.inverse_rigid_trans(V2C), label_centroid_rectified)
+            label_centroid_rectified = np.matmul(np.linalg.inv(R_rectification), label_centroid_rectified)
+            label_centroid_rectified = np.matmul(DataProcessor.inverse_rigid_trans(V2C), label_centroid_rectified)
             label_centroid_rectified = label_centroid_rectified[:3]
             label.centroid = label_centroid_rectified
 
@@ -65,8 +69,13 @@ class DataProcessor(Parameters):
                 label.yaw += (np.pi * 2)
             while label.yaw > np.pi:
                 label.yaw -= (np.pi * 2)
+            
+            # print("================================================== After transformation/LiDAR coordinate frame==================================================")
+            # print("x: {}\ty: {}\tz: {}\tl: {}\tw: {}\th: {}\tyaw: {}\tclass: {}".format(label.centroid[0], label.centroid[1], 
+            #     label.centroid[2], label.dimension[0], label.dimension[1], label.dimension[2], label.yaw, label.classification))
+            
         return labels
-    
+
     @staticmethod
     def inverse_rigid_trans(Tr):
         ''' Inverse a rigid body transform matrix (3x4 as [R|t])
@@ -196,15 +205,13 @@ class SimpleDataGenerator(DataProcessor, Sequence):
 
             if self.label_files is not None:
                 label = self.data_reader.read_label(self.label_files[i])
-                R, t = self.data_reader.read_calibration(self.calibration_files[i])
+                # R, t = self.data_reader.read_calibration(self.calibration_files[i])
+                # label_transformed = self.transform_labels_into_lidar_coordinates(label, R, t)
 
-                # P2, R0, Tr_velo_to_cam = self.data_reader.read_calibration(self.calibration_files[i]) # Correct calibration reading
-
+                P2, R0, Tr_velo_to_cam = self.data_reader.read_calibration(self.calibration_files[i]) # Correct calibration reading
                 # Labels are transformed into the lidar coordinate bounding boxes
                 # Label has 7 values, centroid, dimensions and yaw value.
-                label_transformed = self.transform_labels_into_lidar_coordinates(label, R, t)
-
-                # label_transformed = self.camera_to_lidar(label, P2, R0, Te_velo_to_cam) # Correct transformation
+                label_transformed = self.camera_to_lidar(label, P2, R0, Tr_velo_to_cam) # Correct transformation
 
                 # These definitions can be found in point_pillars.cpp file
                 # We are splitting a 10 dim vector that contains this information.
