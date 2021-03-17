@@ -75,8 +75,6 @@ class KittiDataReader(DataReader):
             P_2 = np.array(lines[2].split(": ")[1].split(" "), dtype=np.float32).reshape(3, 4) # Projection matrix for left-color camera
             R0 = np.array(lines[4].split(": ")[1].split(" "), dtype=np.float32).reshape(3, 3) # Rectification rotation matrix of left-color camera
             Tr_velo_to_cam = np.array(lines[5].split(": ")[1].split(" "), dtype=np.float32).reshape((3, 4)) # [R | T]
-
-            R, t = Tr_velo_to_cam[:, :3], Tr_velo_to_cam[:, 3] # First 3x3 is rotation and last vector is translation
-            return R, t
-
-            # return P_2, R0, Tr_velo_to_cam # Correct calibration information required for transformation
+            # R, t = Tr_velo_to_cam[:, :3], Tr_velo_to_cam[:, 3] # First 3x3 is rotation and last vector is translation
+            # return R, t
+            return P_2, R0, Tr_velo_to_cam # Correct calibration information required for transformation
