@@ -367,6 +367,7 @@ std::tuple<pybind11::array_t<float>, int, int> createPillarsTarget(const pybind1
     
     std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
+    // getting downsampled grid size
     const auto xSize = static_cast<int>(std::floor((xMax - xMin) / (xStep * downscalingFactor)));
 //     py::print("xSize", xSize);
     const auto ySize = static_cast<int>(std::floor((yMax - yMin) / (yStep * downscalingFactor)));
@@ -405,6 +406,7 @@ std::tuple<pybind11::array_t<float>, int, int> createPillarsTarget(const pybind1
         anchorBox.yaw = anchorYaws.at(i);
         anchorBoxes.emplace_back(anchorBox); // Appends a new anchorBox to the AnchorBoxes container
         // Note that anchor box doesn't have a classId as of now.
+        // Length of (width,length) axis diagonal.
         anchorDiagonals.emplace_back(std::sqrt(std::pow(anchorBox.width, 2) + std::pow(anchorBox.length, 2)));
     }
 
@@ -433,6 +435,8 @@ std::tuple<pybind11::array_t<float>, int, int> createPillarsTarget(const pybind1
     pybind11::array_t<float> tensor;
     tensor.resize({nbObjects, xSize, ySize, nbAnchors, 10}); //Tensor of size (6,252,252,4,10) for first file
     
+    // getting tensor information as defined in Python buffer protocol specification 
+    // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
     pybind11::buffer_info tensor_buffer = tensor.request();
     float *ptr1 = (float *) tensor_buffer.ptr;
     // Zero filling the tensor. Every element is presently zero
@@ -472,22 +476,24 @@ std::tuple<pybind11::array_t<float>, int, int> createPillarsTarget(const pybind1
         float maxIou = 0;
         BoundingBox3D bestAnchor = {};
         int bestAnchorId = 0;
+        int bestAnchorxId = 0;
+        int bestAnchoryId = 0;
         for (int xId = xStart; xId < xEnd; xId++) // Iterate through every box within search diameter
             // In our example case, from 3 till 8
         {
-            const float x = xId * xStep * downscalingFactor + xMin;
             // Getting the real world x coordinate
+            const float x = xId * xStep * downscalingFactor + xMin;
             for (int yId = yStart; yId < yEnd; yId++) // Iterate through every box within search diamter in y axis
             {
-                const float y = yId * yStep * downscalingFactor + yMin;
                 // Get the real world y coordinates
+                const float y = yId * yStep * downscalingFactor + yMin;
                 int anchorCount = 0;
                 for (auto& anchorBox: anchorBoxes) // For every anchor box (4 in our case)
                     // Note that we are checking every anchor box for every label in the file
                 {
                     anchorBox.x = x; // Assign the real world x and y coordinate to the anchor box
                     anchorBox.y = y; // Note that anchor boxes originally didn't have Xs and Ys.
-                    // This is because we need ot check them along the X-Y grid.
+                    // This is because we need to check them along the X-Y grid.
                     // However, they did have a z value attached to them. 
 
                     const float iouOverlap = iou(anchorBox, labelBox); // Get IOU between two 3D boxes.
@@ -497,6 +503,8 @@ std::tuple<pybind11::array_t<float>, int, int> createPillarsTarget(const pybind1
                         maxIou = iouOverlap;
                         bestAnchor = anchorBox;
                         bestAnchorId = anchorCount;
+                        bestAnchorXId = xId;
+                        bestAnchoryId = yId;
                     }
 
                     if (iouOverlap > positiveThreshold) // Accept the Anchor. Add the anchor details to the tensor.
@@ -554,6 +562,9 @@ std::tuple<pybind11::array_t<float>, int, int> createPillarsTarget(const pybind1
 
             const auto xId = static_cast<int>(std::floor((labelBox.x - xMin) / (xStep * downscalingFactor)));
             const auto yId = static_cast<int>(std::floor((labelBox.y - yMin) / (yStep * downscalingFactor)));
+
+            // const auto xId = bestAnchorxId;
+            // const auto yId = bestAnchoryId;
             const float diag = std::sqrt(std::pow(bestAnchor.width, 2) + std::pow(bestAnchor.length, 2));
 
             tensor.mutable_at(objectCount, xId, yId, bestAnchorId, 0) = 1;
