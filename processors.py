@@ -36,7 +36,7 @@ class DataProcessor(Parameters):
             # @ -> Matrix multiplication
             label.centroid = label.centroid @ np.linalg.inv(R).T - t # Why transposing the inversed orthogonal matrix? Where is Camera rotation handling?
             label.dimension = label.dimension[[2, 1, 0]] # h, w, l -> w, l, h
-            label.yaw -= np.pi / 2 # Maping negative and positive angles on the same loc, not sure why
+            label.yaw -= np.pi / 2 
             while label.yaw < -np.pi:
                 label.yaw += (np.pi * 2)
             while label.yaw > np.pi:
@@ -47,7 +47,7 @@ class DataProcessor(Parameters):
     @staticmethod
     def camera_to_lidar(labels: List[Label3D], P: np.ndarray, R: np.ndarray, V2C: np.ndarray):
         # TODO: Yaw angle correction and mapping
-        for idx in range(len(labels)):
+        for label in labels:
             label_centroid = label.centroid # (x, y, z) of BB in camera coordinates (in meters)
             label.dimension = label.dimension[[2, 1, 0]] # h, w, l -> l, w, h
             label_centroid_rectified = np.array(label_centroid.append(1))
@@ -60,6 +60,13 @@ class DataProcessor(Parameters):
             label_centroid_rectified = np.matmul(self.inverse_rigid_trans(V2C), label_centroid_rectified)
             label_centroid_rectified = label_centroid_rectified[:3]
             label.centroid = label_centroid_rectified
+
+            label.yaw -= np.pi / 2 
+            while label.yaw < -np.pi:
+                label.yaw += (np.pi * 2)
+            while label.yaw > np.pi:
+                label.yaw -= (np.pi * 2)
+        return labels
     
     @staticmethod
     def inverse_rigid_trans(Tr):
