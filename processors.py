@@ -46,7 +46,6 @@ class DataProcessor(Parameters):
 
     @staticmethod
     def camera_to_lidar(labels: List[Label3D], P: np.ndarray, R: np.ndarray, V2C: np.ndarray):
-        # TODO: Yaw angle correction and mapping
         for label in labels:
             label_centroid = label.centroid # (x, y, z) of BB in camera coordinates (in meters)
             label.dimension = label.dimension[[2, 1, 0]] # h, w, l -> l, w, h
