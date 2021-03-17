@@ -50,7 +50,7 @@ class DataProcessor(Parameters):
         for idx in range(len(labels)):
             label_centroid = label.centroid # (x, y, z) of BB in camera coordinates (in meters)
             label.dimension = label.dimension[[2, 1, 0]] # h, w, l -> l, w, h
-            label_centroid_rectified = np.array(list(*label_centroid, 1))
+            label_centroid_rectified = np.array(label_centroid.append(1))
 
             # Transforming 3x3 rotation matrix into 4x4 rotation matrix
             R_rectification = np.zeros((4, 4))
