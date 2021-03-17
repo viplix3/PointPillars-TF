@@ -476,8 +476,8 @@ std::tuple<pybind11::array_t<float>, int, int> createPillarsTarget(const pybind1
         float maxIou = 0;
         BoundingBox3D bestAnchor = {};
         int bestAnchorId = 0;
-        int bestAnchorxId = 0;
-        int bestAnchoryId = 0;
+        // int bestAnchorxId = 0;
+        // int bestAnchoryId = 0;
         for (int xId = xStart; xId < xEnd; xId++) // Iterate through every box within search diameter
             // In our example case, from 3 till 8
         {
@@ -503,8 +503,8 @@ std::tuple<pybind11::array_t<float>, int, int> createPillarsTarget(const pybind1
                         maxIou = iouOverlap;
                         bestAnchor = anchorBox;
                         bestAnchorId = anchorCount;
-                        bestAnchorXId = xId;
-                        bestAnchoryId = yId;
+                        // bestAnchorXId = xId;
+                        // bestAnchoryId = yId;
                     }
 
                     if (iouOverlap > positiveThreshold) // Accept the Anchor. Add the anchor details to the tensor.
