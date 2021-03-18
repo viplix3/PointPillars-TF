@@ -12,9 +12,10 @@ import sys
 
 
 def select_best_anchors(arr):
-    dims = np.indices(arr.shape[1:])
+    dims = np.indices(arr.shape[1:]) # arr -> [num_GT_BB, grid_x, grid_y, num_anchors, 10]
+    # 10 -> [occupancy, x_encoded, y_encoded, z_encoded, l_w.r.t._anchor, w_w.r.t_anchor, h_w.r.t._anchor, sin(GT_yaw - anchor_yaw), yaw_class, box_class_id]
     # arr[..., 0:1] gets the occupancy value from occ in {-1, 0, 1}, i.e. {bad match, neg box, pos box}
-    ind = (np.argmax(arr[..., 0:1], axis=0),) + tuple(dims)
+    ind = (np.argmax(arr[..., 0:1], axis=0),) + tuple(dims) # mask on the basis of occupancy == 1 -> [occupancy, grid_x, grid_y, num_anchors, 10]
     return arr[ind]
 
 
@@ -172,10 +173,9 @@ class SimpleDataGenerator(DataProcessor, Sequence):
         self.label_files = label_files
         self.calibration_files = calibration_files
 
-        assert (calibration_files is None and label_files is None) or \
-               (calibration_files is not None and label_files is not None)
+        assert (len(self.calibration_files) == len(self.lidar_files))
 
-        if self.calibration_files is not None:
+        if self.label_files is not None:
             assert len(self.calibration_files) == len(self.lidar_files)
             assert len(self.label_files) == len(self.lidar_files)
 
