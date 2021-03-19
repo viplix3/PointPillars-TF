@@ -3,14 +3,14 @@ import numpy as np
 from config import Parameters
 
 
-def build_point_pillar_graph(params: Parameters):
+def build_point_pillar_graph(params: Parameters, batch_size: int = Parameters.batch_size):
 
     # extract required parameters
     max_pillars = int(params.max_pillars)
     max_points  = int(params.max_points_per_pillar)
     nb_features = int(params.nb_features)
     nb_channels = int(params.nb_channels)
-    batch_size  = int(params.batch_size)
+    # batch_size  = int(params.batch_size)
     image_size  = tuple([params.Xn, params.Yn])
     nb_classes  = int(params.nb_classes)
     nb_anchors  = len(params.anchor_dims)
@@ -34,6 +34,7 @@ def build_point_pillar_graph(params: Parameters):
             corrected_indices = tf.keras.layers.Lambda(lambda t: correct_batch_indices(t, batch_size))(input_indices)
     else:
         corrected_indices = input_indices
+
 
     # pillars
     x = tf.keras.layers.Conv2D(nb_channels, (1, 1), activation='linear', use_bias=False, name="pillars/conv2d")(input_pillars)
@@ -113,6 +114,6 @@ def build_point_pillar_graph(params: Parameters):
     clf = tf.keras.layers.Reshape(tuple(i // 2 for i in image_size) + (nb_anchors, nb_classes), name="clf/reshape")(clf)
 
     pillar_net = tf.keras.models.Model([input_pillars, input_indices], [occ, loc, size, angle, heading, clf])
-#     print(pillar_net.summary())
+    print(pillar_net.summary())
 
     return pillar_net
