@@ -24,11 +24,86 @@ class BBox(tuple):
         self.heading = bb_heading
         self.cls = bb_cls
         self.conf = bb_conf
+        self.class_dict = { 0: "Car",
+                            1: "Pedestrian",
+                            2: "Cyclist",
+                            3: "Misc."}
 
     def __str__(self):
-        return "BB | Cls: %s, x: %f, y: %f, l: %f, w: %f, yaw: %f" % (
-            self.cls, self.x, self.y, self.length, self.width, self.yaw)
+        return "BB | Cls: %s, x: %f, y: %f, z: %f, l: %f, w: %f, h: %f, yaw: %f, conf: %f" % (
+            self.cls, self.x, self.y, self.z, self.length, self.width, self.height, self.yaw, self.conf)
 
+    def to_kitti_format(self, P2: np.ndarray, R0: np.ndarray, V2C: np.ndarray):
+        self.x, self.y, self.z = BBox.lidar_to_camera(self.x, self.y, self.z, P2, R0, V2C) # velodyne to camera coordinate projection
+
+        # TODO: Get 2D BB
+        # model predicts angles w.r.t. z-axis in LiDAR coordinate frame
+        # changing it to camera coordinate, where the angle is w.r.t y-axis
+        # z-axis in LiDAR coordinate frame == -(y-axis) of camera coordinate frame
+        angle_y = - self.yaw - (2 * np.pi)
+        angle_y = angle_y - (np.pi / 2)
+        self.yaw = angle_y
+        bbox_2d = self.get_2D_bb(P2)
+
+        # TODO: Check alpha calculation
+
+
+    def get_2D_bb(self, P: np.ndarray):
+        """ Projects the 3D box onto the image plane and provides 2D BB 
+            1. Get 3D bounding box vertices
+            2. Rotate 3D bounding box with yaw angle
+            3. Multiply with LiDAR to camera projection matrix
+            4. Multiply with camera to image projection matrix
+        """
+        Ry = get_y_axis_rotation_matrix(self.yaw) # rotation matrix around y-axis
+        l = self.length
+        w = self.width
+        h = self.height
+
+        # 3d bb corner coordinates in camera coordinate frame, coordinate system is at the center of box
+        # x-axis -> right (width), y-axis -> bottom (height), z-axis -> forward (length)
+        #     1 -------- 0
+        #    /|         /|
+        #   2 -------- 3 .
+        #   | |        | |
+        #   . 5 -------- 4
+        #   |/         |/
+        #   6 -------- 7
+        bb_3d_x_corner_coordinates = [w/2, -w/2, -w/2, w/2, w/2, -w/2, -w/2, w/2]
+        bb_3d_y_corner_coordinates = [-h/2, -h/2, -h/2, -h/2, h/2, h/2, h/2, h/2]
+        bb_3d_z_corner_coordinates = [l/2, l/2, -l/2, -l/2, l/2, l/2, -l/2, -l/2]
+
+        # box rotation by yaw angle
+        bb_3d_corners = R @ np.vstack([bb_3d_x_corner_coordinates, bb_3d_y_corner_coordinates, bb_3d_z_corner_coordinates])
+        # box translation by centroid coordinates
+        bb_3d_corners = bb_3d_corners[0, :] + self.x
+        bb_3d_corners = bb_3d_corners[1, :] + self.y
+        bb_3d_corners = bb_3d_corners[2, :] + self.z
+
+    @staticmethod
+    def get_y_axis_alinged_rotation_matrix(rotation_angle):
+        cos_theta = np.cos(rotation_angle)
+        sin_theta = np.sin(rotation_angle)
+        rotation_matrix = [[cos_theta,  0,   sin_theta],
+                           [0,          1,     0      ],
+                           [-sin_theta  0,   cos_theta]]
+        return np.array(rotation_matrix)
+
+    @staticmethod
+    def lidar_to_camera(x: float, y: float, z: float, P2: np.ndarray, R: np.ndarray, V2C: np.ndarray):
+        """ Projects the box centroid from LiDAR coordinate system to camera coordinate system using calibration matrices """
+        box_centroid = [x, y, z, 1]
+        box_centroid = V2C @ box_centroid
+        box_centroid = P2 @ box_centroid
+        return box_centroid[:3]
+
+def gather_boxes_in_kitti_format(boxes: List[BBox], indices: List, P2: np.ndarray, R0: np.ndarray, Tr_velo_to_cam: np.ndarray):
+    """ gathers boxes left after nms and converts them to kitti evaluation toolkit expected format """
+    if len(indices) == 0:
+        return
+    nms_boxes = [boxes[idx].to_kitti_format(P2, R0, Tr_velo_to_cam) for idx in indices]
+    print(nms_boxes)
+    return nms_boxes
 
 def rotational_nms(set_boxes, confidences, occ_threshold=0.7, nms_iou_thr=0.5):
     """ rotational NMS
@@ -38,15 +113,22 @@ def rotational_nms(set_boxes, confidences, occ_threshold=0.7, nms_iou_thr=0.5):
     assert len(set_boxes) == len(confidences) and 0 < occ_threshold < 1 and 0 < nms_iou_thr < 1
     if not len(set_boxes):
         return []
-    assert (isinstance(set_boxes[0][0][0][0], float) or isinstance(set_boxes[0][0][0][0], int)) and \
-           (isinstance(confidences[0][0], float) or isinstance(confidences[0][0], int))
+    assert (isinstance(set_boxes[0][0][0], float) or isinstance(set_boxes[0][0][0], int)) and \
+           (isinstance(confidences[0], float) or isinstance(confidences[0], int))
     nms_boxes = []
-    for boxes, confs in zip(set_boxes, confidences):
-        assert len(boxes) == len(confs)
-        indices = cv.dnn.NMSBoxesRotated(boxes, confs, occ_threshold, nms_iou_thr)
-        indices = indices.reshape(len(indices)).tolist()
-        nms_boxes.append([boxes[i] for i in indices])
-    return nms_boxes
+
+    ## If batch_size > 1
+    # for boxes, confs in zip(set_boxes, confidences):
+    #     assert len(boxes) == len(confs)
+    #     indices = cv.dnn.NMSBoxesRotated(boxes, confs, occ_threshold, nms_iou_thr)
+    #     indices = indices.reshape(len(indices)).tolist()
+    #     nms_boxes.append([boxes[i] for i in indices])
+
+    ## IF batch_size == 1
+    indices = cv.dnn.NMSBoxesRotated(set_boxes, confidences, occ_threshold, nms_iou_thr)
+    indices = indices.reshape(len(indices)).tolist()
+    # nms_boxes.append([set_boxes[i] for i in indices])
+    return indices
 
 
 def generate_bboxes_from_pred(occ, pos, siz, ang, hdg, clf, anchor_dims, occ_threshold=0.5):
