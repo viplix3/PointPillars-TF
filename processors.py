@@ -47,24 +47,35 @@ class DataProcessor(Parameters):
 
     @staticmethod
     def camera_to_lidar(labels: List[Label3D], P: np.ndarray, R: np.ndarray, V2C: np.ndarray):
+        """ Transforms all the box parameters from camera coordinate frame to LiDAR coordinate frame """
         for label in labels:
             # print("================================================== Before transformation/Camera coordinate frame==================================================")
             # print("x: {}\ty: {}\tz: {}\tl: {}\tw: {}\th: {}\tyaw: {}\tclass: {}".format(label.centroid[0], label.centroid[1], 
             #     label.centroid[2], label.dimension[2], label.dimension[1], label.dimension[0], label.yaw, label.classification))
 
+            # In camera coordinate frame: length (or depth) will be along z-axis, width will be along y-axis, height will be along z-axis
+            # In lidar coordinate frame: length (or depth) will be along x-axis, width will be along y-axis, height will be along z-axis
+            label.dimension = label.dimension[[2, 1, 0]] # h, w, l -> l, w, h, now they are alinged to the LiDAR coordinate frame
+
             label_centroid = label.centroid # (x, y, z) of BB in camera coordinates (in meters)
-            label.dimension = label.dimension[[2, 1, 0]] # h, w, l -> l, w, h
             label_centroid_rectified = np.array([label_centroid[0], label_centroid[1], label_centroid[2], 1])
 
-            # Transforming 3x3 rotation matrix into 4x4 rotation matrix
+            # Transforming 3x3 reference camera rotation matrix into 4x4 rotation matrix
             R_rectification = np.zeros((4, 4))
             R_rectification[:3, :3] = R
             R_rectification[3, 3] = 1
+            # inversing the rotation, so now, rotation w.r.t. camera is gone
             label_centroid_rectified = np.matmul(np.linalg.inv(R_rectification), label_centroid_rectified)
+            # Projecting from camera to LiDAR
             label_centroid_rectified = np.matmul(DataProcessor.inverse_rigid_trans(V2C), label_centroid_rectified)
             label_centroid_rectified = label_centroid_rectified[:3]
             label.centroid = label_centroid_rectified
 
+            # yaw angle has been provided w.r.t y-axis in the camera coordinate, which corresponds to -(z-axis) in LiDAR coordinate
+            # we need to take negative of provided yaw angle to transform it from camera coordinate to LiDAR coordinate
+            label.yaw = -label.yaw
+            # if it is in [0, -pi], angle is in (y, -x) quadrant in camera coordinate, which corresponds to (z, y) quadrant in LiDAR coordinate
+            # if it is in [0, pi], angle is in (y, z) quadrant in camera coordinate, which corresponds to (-y, z) quadrant in LiDAR coordinate
             label.yaw -= np.pi / 2 
             while label.yaw < -np.pi:
                 label.yaw += (np.pi * 2)
@@ -87,7 +98,7 @@ class DataProcessor(Parameters):
         inv_Tr[0:3, 3] = np.dot(-np.transpose(Tr[0:3, 0:3]), Tr[0:3, 3])
         return inv_Tr
 
-    def make_point_pillars(self, points: np.ndarray):
+    def make_point_pillars(self, points: np.ndarray, print_flag: bool = False):
 
         assert points.ndim == 2
         assert points.shape[1] == 4
@@ -104,7 +115,7 @@ class DataProcessor(Parameters):
                                          self.y_max,
                                          self.z_min,
                                          self.z_max,
-                                         False)
+                                         print_flag)
 
         return pillars, indices
 
