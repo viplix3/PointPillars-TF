@@ -1,9 +1,11 @@
 import os
+import cv2
 from glob import glob
 import numpy as np
 import tensorflow as tf
 from processors import DataProcessor
-from inference_utils import generate_bboxes_from_pred, rotational_nms, gather_boxes_in_kitti_format
+from inference_utils import generate_bboxes_from_pred, rotational_nms, \
+    gather_boxes_in_kitti_format, dump_predictions, draw_projected_box3d
 from readers import KittiDataReader
 from config import Parameters
 from network import build_point_pillar_graph
@@ -11,10 +13,11 @@ import argparse
 import logging
 from easydict import EasyDict as edict
 import time
+from tqdm import tqdm
 
 def generate_config_from_cmd_args():
     parser = argparse.ArgumentParser(description='PointPillars inference on test data.')
-    parser.add_argument('--gpu_idx', default=0, type=int, required=False, 
+    parser.add_argument('--gpu_idx', default=2, type=int, required=False, 
         help='GPU index to use for inference')
     parser.add_argument('--data_root', default=None, required=True, 
         help='Test data root path holding folders velodyne, calib')
@@ -31,6 +34,7 @@ def generate_config_from_cmd_args():
     return configs
 
 def get_file_names(data_root_path):
+    image_file_names = sorted(glob(os.path.join(data_root_path, "image_2", "*.png")))
     lidar_file_names = sorted(glob(os.path.join(data_root_path, "velodyne", "*.bin")))
     calib_file_names = sorted(glob(os.path.join(data_root_path, "calib", "*.txt")))
 
@@ -38,7 +42,7 @@ def get_file_names(data_root_path):
         logging.error("Input dirs require equal number of files")
         exit()
 
-    return lidar_file_names, calib_file_names
+    return image_file_names, lidar_file_names, calib_file_names
 
 def load_model_and_run_inference(configs):
     params = Parameters() # Load all model related parameters
@@ -48,20 +52,29 @@ def load_model_and_run_inference(configs):
     pillar_net.load_weights(configs.model_path)
     logging.info("Model loaded.")
 
-    lidar_files, calibration_files = get_file_names(configs.data_root)
+    image_files, lidar_files, calibration_files = get_file_names(configs.data_root)
     logging.debug("1st LiDAR data file: {}".format(lidar_files[0]))
     logging.debug("1st calibration file: {}".format(calibration_files[0]))
 
     data_reader = KittiDataReader()
     point_cloud_processor = DataProcessor()
     model_exec_time = []
+    
+    out_images_path = os.path.join(configs.result_dir, "images")
+    out_labels_path = os.path.join(configs.result_dir, "labels")
+    os.makedirs(out_images_path, exist_ok=True)
+    os.makedirs(out_labels_path, exist_ok=True)
 
-    for idx in range(len(lidar_files)):
-        logging.debug("Running for file: {}".format(lidar_files[idx].split('.')[0]))
+    for idx in tqdm(range(len(lidar_files))):
+        file_name = lidar_files[idx].split('.')[0]
+        file_name = file_name.split("/")[-1]
+        logging.debug("Running for file: {}".format(file_name))
         lidar_data = data_reader.read_lidar(lidar_files[idx])
         P2, R0, Tr_velo_to_cam = data_reader.read_calibration(calibration_files[idx])
 
-        pillars, voxels = point_cloud_processor.make_point_pillars(points=lidar_data, print_flag=True)
+        if logging.getLevelName(logging.root.level) == "DEBUG":
+            pillars, voxels = point_cloud_processor.make_point_pillars(points=lidar_data, print_flag=True)
+        pillars, voxels = point_cloud_processor.make_point_pillars(points=lidar_data, print_flag=False)
         start = time.time()
         occupancy, position, size, angle, heading, classification = pillar_net.predict([pillars, voxels])
         stop = time.time()
@@ -104,11 +117,22 @@ def load_model_and_run_inference(configs):
         for idx in nms_indices:
             logging.debug("{:04d}: {}".format(idx, boxes[idx]))
 
-        prediction_in_kitti_format = gather_boxes_in_kitti_format(boxes, nms_indices, P2, R0, Tr_velo_to_cam)
+        prediction_in_kitti_format, bb_3d_corners = gather_boxes_in_kitti_format(boxes, nms_indices, P2, R0, Tr_velo_to_cam)
+
+        image_data = cv2.imread(image_files[idx])
+        for box_3d in bb_3d_corners:
+            image_data = draw_projected_box3d(image_data, box_3d)
+        cv2.imwrite(os.path.join(out_images_path, "{}.png".format(file_name)), image_data)
+        dump_predictions(prediction_in_kitti_format, os.path.join(out_labels_path, "{}.txt".format(file_name)))
+    
+    model_exec_time = model_exec_time[1:]
+    total_model_exec_time = sum(model_exec_time)
+    model_fps = total_model_exec_time / len(model_exec_time)
+    logging.info("PointPillars model inference FPS: {}".format(model_fps))
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - [%(levelname)s]: %(message)s")
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - [%(levelname)s]: %(message)s")
     pred_config = generate_config_from_cmd_args()
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = str(pred_config.gpu_idx)
