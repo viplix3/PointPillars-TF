@@ -53,7 +53,7 @@ class DataProcessor(Parameters):
             # print("x: {}\ty: {}\tz: {}\tl: {}\tw: {}\th: {}\tyaw: {}\tclass: {}".format(label.centroid[0], label.centroid[1], 
             #     label.centroid[2], label.dimension[2], label.dimension[1], label.dimension[0], label.yaw, label.classification))
 
-            # In camera coordinate frame: length (or depth) will be along z-axis, width will be along y-axis, height will be along z-axis
+            # In camera coordinate frame: length (or depth) will be along z-axis, width will be along x-axis, height will be along y-axis
             # In lidar coordinate frame: length (or depth) will be along x-axis, width will be along y-axis, height will be along z-axis
             label.dimension = label.dimension[[2, 1, 0]] # h, w, l -> l, w, h, now they are alinged to the LiDAR coordinate frame
 
@@ -71,17 +71,20 @@ class DataProcessor(Parameters):
             label_centroid_rectified = label_centroid_rectified[:3]
             label.centroid = label_centroid_rectified
 
+            # # Adding an offset to the length and width values
+            # label.dimension[0] = label.dimension[0] + 0.3 # Adding some constant factor as GT values are very small
+            # label.dimension[1] = label.dimension[1] + 0.3 # Adding some constant factor as GT values are very small
+
+            # # Normalizing box dimensions
+            # label.dimension[0] = label.dimension[0] / (self.x_max - self.x_min)
+            # label.dimension[1] = label.dimension[1] / (self.y_max - self.y_min)
+            # label.dimension[2] = label.dimension[2] / (self.z_max - self.z_min)
+
+
             # yaw angle has been provided w.r.t y-axis in the camera coordinate, which corresponds to -(z-axis) in LiDAR coordinate
             # we need to take negative of provided yaw angle to transform it from camera coordinate to LiDAR coordinate
-            label.yaw = -label.yaw
-            # if it is in [0, -pi], angle is in (y, -x) quadrant in camera coordinate, which corresponds to (z, y) quadrant in LiDAR coordinate
-            # if it is in [0, pi], angle is in (y, z) quadrant in camera coordinate, which corresponds to (-y, z) quadrant in LiDAR coordinate
-            label.yaw -= np.pi / 2 
-            while label.yaw < -np.pi:
-                label.yaw += (np.pi * 2)
-            while label.yaw > np.pi:
-                label.yaw -= (np.pi * 2)
-            
+            label.yaw = -label.yaw # Rotation w.r.t z-axis of LiDAR coordinate frame
+
             # print("================================================== After transformation/LiDAR coordinate frame==================================================")
             # print("x: {}\ty: {}\tz: {}\tl: {}\tw: {}\th: {}\tyaw: {}\tclass: {}".format(label.centroid[0], label.centroid[1], 
             #     label.centroid[2], label.dimension[0], label.dimension[1], label.dimension[2], label.yaw, label.classification))
@@ -94,8 +97,8 @@ class DataProcessor(Parameters):
             [R'|-R't; 0|1]
         '''
         inv_Tr = np.zeros_like(Tr)  # 3x4
-        inv_Tr[0:3, 0:3] = np.transpose(Tr[0:3, 0:3])
-        inv_Tr[0:3, 3] = np.dot(-np.transpose(Tr[0:3, 0:3]), Tr[0:3, 3])
+        inv_Tr[0:3, 0:3] = np.transpose(Tr[0:3, 0:3]) # Inverse rotation matrix
+        inv_Tr[0:3, 3] = np.dot(-np.transpose(Tr[0:3, 0:3]), Tr[0:3, 3]) # Inverse translation, takes into account the rotation
         return inv_Tr
 
     def make_point_pillars(self, points: np.ndarray, print_flag: bool = False):
@@ -139,7 +142,7 @@ class DataProcessor(Parameters):
         target_yaw = np.array([label.yaw for label in labels], dtype=np.float32)
         target_class = np.array([self.classes[label.classification] for label in labels], dtype=np.int32)
 
-        assert np.all(target_yaw >= -np.pi) & np.all(target_yaw <= np.pi)
+        # assert np.all(target_yaw >= -np.pi) & np.all(target_yaw <= np.pi)
         assert len(target_positions) == len(target_dimension) == len(target_yaw) == len(target_class)
 
         target, pos, neg = createPillarsTarget(target_positions,
