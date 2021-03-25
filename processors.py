@@ -45,8 +45,7 @@ class DataProcessor(Parameters):
             transformed.append(label)
         return labels
 
-    @staticmethod
-    def camera_to_lidar(labels: List[Label3D], P: np.ndarray, R: np.ndarray, V2C: np.ndarray):
+    def camera_to_lidar(self, labels: List[Label3D], P: np.ndarray, R: np.ndarray, V2C: np.ndarray):
         """ Transforms all the box parameters from camera coordinate frame to LiDAR coordinate frame """
         for label in labels:
             # print("================================================== Before transformation/Camera coordinate frame==================================================")
