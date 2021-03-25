@@ -19,9 +19,9 @@ def generate_config_from_cmd_args():
     parser = argparse.ArgumentParser(description='PointPillars inference on test data.')
     parser.add_argument('--gpu_idx', default=2, type=int, required=False, 
         help='GPU index to use for inference')
-    parser.add_argument('--data_root', default=None, required=True, 
+    parser.add_argument('--data_root', default=None, type=str, required=True, 
         help='Test data root path holding folders velodyne, calib')
-    parser.add_argument('--result_dir', default=None, required=True,
+    parser.add_argument('--result_dir', default=None, type=str, required=True,
         help='Path for dumping result labels in KITTI format')
     parser.add_argument('--model_path', default='./logs/model.h5', type=str, required=False,
         help='Path to the model weights to be used for inference')
@@ -53,6 +53,7 @@ def load_model_and_run_inference(configs):
     logging.info("Model loaded.")
 
     image_files, lidar_files, calibration_files = get_file_names(configs.data_root)
+    logging.debug("1st image file: {}".format(image_files[0]))
     logging.debug("1st LiDAR data file: {}".format(lidar_files[0]))
     logging.debug("1st calibration file: {}".format(calibration_files[0]))
 
@@ -71,9 +72,8 @@ def load_model_and_run_inference(configs):
         logging.debug("Running for file: {}".format(file_name))
         lidar_data = data_reader.read_lidar(lidar_files[idx])
         P2, R0, Tr_velo_to_cam = data_reader.read_calibration(calibration_files[idx])
+        image_data = cv2.imread(image_files[idx])
 
-        if logging.getLevelName(logging.root.level) == "DEBUG":
-            pillars, voxels = point_cloud_processor.make_point_pillars(points=lidar_data, print_flag=True)
         pillars, voxels = point_cloud_processor.make_point_pillars(points=lidar_data, print_flag=False)
         start = time.time()
         occupancy, position, size, angle, heading, classification = pillar_net.predict([pillars, voxels])
@@ -119,10 +119,9 @@ def load_model_and_run_inference(configs):
 
         prediction_in_kitti_format, bb_3d_corners = gather_boxes_in_kitti_format(boxes, nms_indices, P2, R0, Tr_velo_to_cam)
 
-        image_data = cv2.imread(image_files[idx])
         for box_3d in bb_3d_corners:
             image_data = draw_projected_box3d(image_data, box_3d)
-        cv2.imwrite(os.path.join(out_images_path, "{}.png".format(file_name)), image_data)
+        cv2.imwrite(os.path.join(out_images_path, "{}.jpg".format(file_name)), image_data)
         dump_predictions(prediction_in_kitti_format, os.path.join(out_labels_path, "{}.txt".format(file_name)))
     
     model_exec_time = model_exec_time[1:]

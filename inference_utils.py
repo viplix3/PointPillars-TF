@@ -20,11 +20,15 @@ class BBox(Parameters, tuple):
         self.y = bb_y
         self.z = bb_z
         
-        self.length = bb_length # * (self.x_max - self.x_min)
-        self.width = bb_width # * (self.y_max - self.y_min)
-        self.height = bb_height # * (self.z_max - self.z_min)
+        self.length = bb_length
+        self.width = bb_width
+        self.height = bb_height
+        
         # self.length -= 0.3
         # self.width -= 0.3
+        # self.length = self.length * (self.x_max - self.x_min)
+        # self.width = self.width * (self.y_max - self.y_min)
+        # self.height = self.height * (self.z_max - self.z_min)
 
         self.yaw = bb_yaw
         self.heading = bb_heading
@@ -65,7 +69,7 @@ class BBox(Parameters, tuple):
             3. Multiply with LiDAR to camera projection matrix
             4. Multiply with camera to image projection matrix
         """
-        Ry = BBox.get_y_axis_rotation_matrix(self.yaw) # rotation matrix around y-axis
+        yaw_rotation_matrix = BBox.get_y_axis_rotation_matrix(self.yaw) # rotation matrix around y-axis
         l = self.length
         w = self.width
         h = self.height
