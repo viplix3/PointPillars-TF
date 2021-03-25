@@ -1,8 +1,6 @@
 import os
 import logging
 
-import tensorflow as tf
-
 def parse_data_ids(imageset_root_path: str):
     """ Parses data ids for training/validation data from the provided path """
     train_imageset_file = os.path.join(imageset_root_path, "train.txt")
