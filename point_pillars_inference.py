@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 from processors import DataProcessor
 from inference_utils import generate_bboxes_from_pred, rotational_nms, \
-    gather_boxes_in_kitti_format, dump_predictions, draw_projected_box3d
+    gather_boxes_in_kitti_format, dump_predictions, draw_projected_box3d, pillar_net_predict_server, BBox
 from readers import KittiDataReader
 from config import Parameters
 from network import build_point_pillar_graph
@@ -75,10 +75,17 @@ def load_model_and_run_inference(configs):
         image_data = cv2.imread(image_files[idx])
 
         pillars, voxels = point_cloud_processor.make_point_pillars(points=lidar_data, print_flag=False)
+
+        # start = time.time()
+        # occupancy, position, size, angle, heading, classification = pillar_net.predict([pillars, voxels])
+        # stop = time.time()
+        # logging.debug("Single frame PointPillars inference time using model.predict(): {}".format(stop-start))
+        # model_exec_time.append(stop-start)
+
         start = time.time()
-        occupancy, position, size, angle, heading, classification = pillar_net.predict([pillars, voxels])
+        occupancy, position, size, angle, heading, classification = pillar_net_predict_server([pillars, voxels], pillar_net)
         stop = time.time()
-        logging.debug("Single frame PointPillars inference time: {}".format(stop-start))
+        logging.debug("Single frame PointPillars inference time using predict server: {}".format(stop-start))
         model_exec_time.append(stop-start)
 
         logging.debug("occupancy shape: {}".format(occupancy.shape))
@@ -119,14 +126,15 @@ def load_model_and_run_inference(configs):
 
         prediction_in_kitti_format, bb_3d_corners = gather_boxes_in_kitti_format(boxes, nms_indices, P2, R0, Tr_velo_to_cam)
 
-        for box_3d in bb_3d_corners:
-            image_data = draw_projected_box3d(image_data, box_3d)
+        for idx in range(len(bb_3d_corners)):
+            image_data = draw_projected_box3d(image_data, bb_3d_corners[idx], 
+                            color=BBox.bb_class_colour_map(prediction_in_kitti_format[idx][0]))
         cv2.imwrite(os.path.join(out_images_path, "{}.jpg".format(file_name)), image_data)
         dump_predictions(prediction_in_kitti_format, os.path.join(out_labels_path, "{}.txt".format(file_name)))
     
     model_exec_time = model_exec_time[1:]
     total_model_exec_time = sum(model_exec_time)
-    model_fps = total_model_exec_time / len(model_exec_time)
+    model_fps = len(model_exec_time) / total_model_exec_time
     logging.info("PointPillars model inference FPS: {}".format(model_fps))
 
 

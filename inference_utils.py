@@ -4,7 +4,7 @@ from typing import List
 from config import Parameters
 from readers import DataReader
 from processors import DataProcessor
-
+import tensorflow as tf
 
 class BBox(Parameters, tuple):
     """ bounding box tuple that can easily be accessed while being compatible to cv2 rotational rects """
@@ -42,6 +42,17 @@ class BBox(Parameters, tuple):
     def __str__(self):
         return "BB | Cls: %s, x: %f, y: %f, z: %f, l: %f, w: %f, h: %f, yaw: %f, conf: %f" % (
             self.cls, self.x, self.y, self.z, self.length, self.width, self.height, self.yaw, self.conf)
+    
+    @staticmethod
+    def bb_class_colour_map(class_name: str):
+        if class_name == "Car":
+            return (0, 255, 255)
+        elif class_name == "Pedestrian":
+            return (0, 0, 255)
+        elif class_name == "Cyclist":
+            return (255, 0, 0)
+        else:
+            return (102, 0, 102)
 
     def to_kitti_format(self, P2: np.ndarray, R0: np.ndarray, V2C: np.ndarray):
         self.x, self.y, self.z = BBox.lidar_to_camera(self.x, self.y, self.z, R0, V2C) # velodyne to camera coordinate projection
@@ -154,7 +165,7 @@ class BBox(Parameters, tuple):
         return bbox_2d_image, bbox_3d_image
 
 
-def draw_projected_box3d(image, qs, color=(255, 0, 255), thickness=1):
+def draw_projected_box3d(image, qs, color=(255, 0, 255), thickness=2):
     ''' Draw 3d bounding box in image
         qs: (8,3) array of vertices for the 3d box in following order:
             7 -------- 4
@@ -314,3 +325,8 @@ def focal_loss_checker(y_true, y_pred, n_occs=-1):
                 break
     print("#matched gt: ", p, " #unmatched gt: ", y_true.shape[1] - p, " #unmatched pred: ", y_pred.shape[1] - p,
           " occupancy threshold: ", occ_thr)
+
+@tf.function
+def pillar_net_predict_server(inputs, model):
+    """ tf.function wrapper for faster inference """
+    return model(inputs, training=False)
