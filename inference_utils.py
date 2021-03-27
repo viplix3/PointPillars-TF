@@ -38,6 +38,7 @@ class BBox(Parameters, tuple):
                             1: "Pedestrian",
                             2: "Cyclist",
                             3: "Misc."}
+                            # 3: 2}
 
     def __str__(self):
         return "BB | Cls: %s, x: %f, y: %f, z: %f, l: %f, w: %f, h: %f, yaw: %f, conf: %f" % (

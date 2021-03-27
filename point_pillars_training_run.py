@@ -35,6 +35,8 @@ def train_PillarNet(configs):
 
     logging.info("Parsing train/val image ids")
     train_ids, valid_ids = parse_data_ids(configs.imageset_path)
+    logging.debug("First 8 train dataset ids: {}".format(train_ids[:9]))
+    logging.debug("Frist 8 valid dataset ids: {}".format(valid_ids[:9]))
     logging.info("Training/Validation imageset loaded.")
 
     params = Parameters()
@@ -56,6 +58,10 @@ def train_PillarNet(configs):
     train_lidar_files, train_label_files, train_calib_files = parse_data_from_ids(train_ids, configs.data_root)
     valid_lidar_files, valid_label_files, valid_calib_files = parse_data_from_ids(valid_ids, configs.data_root)
     
+    logging.debug("First 8 train LiDAR pointcloud files: {}".format(train_lidar_files[:9]))
+    logging.debug("First 8 training LiDAR label files: {}".format(train_label_files[:9]))
+    logging.debug("First 8 training sensor calib files: {}".format(train_label_files[:9]))
+
     training_gen = SimpleDataGenerator(data_reader, params.batch_size, train_lidar_files, train_label_files, train_calib_files)
     validation_gen = SimpleDataGenerator(data_reader, params.batch_size, valid_lidar_files, valid_label_files, valid_calib_files)
 
@@ -63,7 +69,7 @@ def train_PillarNet(configs):
     epoch_to_decay = int(
         np.round(params.iters_to_decay / params.batch_size * int(np.ceil(float(len(train_label_files)) / params.batch_size))))
     callbacks = [
-        tf.keras.callbacks.TensorBoard(log_dir=log_dir),
+        tf.keras.callbacks.TensorBoard(log_dir=log_dir, update_freq=10),
         tf.keras.callbacks.ModelCheckpoint(filepath=os.path.join(log_dir, "model.h5"),
                                            monitor='val_loss', save_best_only=True),
         tf.keras.callbacks.LearningRateScheduler(
