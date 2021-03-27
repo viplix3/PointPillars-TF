@@ -476,8 +476,8 @@ std::tuple<pybind11::array_t<float>, int, int> createPillarsTarget(const pybind1
         float maxIou = 0;
         BoundingBox3D bestAnchor = {};
         int bestAnchorId = 0;
-        // int bestAnchorxId = 0;
-        // int bestAnchoryId = 0;
+        int bestAnchor_xId = 0;
+        int bestAnchor_yId = 0;
         for (int xId = xStart; xId < xEnd; xId++) // Iterate through every box within search diameter
             // In our example case, from 3 till 8
         {
@@ -503,8 +503,8 @@ std::tuple<pybind11::array_t<float>, int, int> createPillarsTarget(const pybind1
                         maxIou = iouOverlap;
                         bestAnchor = anchorBox;
                         bestAnchorId = anchorCount;
-                        // bestAnchorXId = xId;
-                        // bestAnchoryId = yId;
+                        bestAnchor_xId = xId;
+                        bestAnchor_yId = yId;
                     }
 
                     if (iouOverlap > positiveThreshold) // Accept the Anchor. Add the anchor details to the tensor.
@@ -560,11 +560,11 @@ std::tuple<pybind11::array_t<float>, int, int> createPillarsTarget(const pybind1
 //                 py::print("Best IOU was "+str(maxIou)+" Adding the best location regardless of threshold");
             }
 
-            const auto xId = static_cast<int>(std::floor((labelBox.x - xMin) / (xStep * downscalingFactor)));
-            const auto yId = static_cast<int>(std::floor((labelBox.y - yMin) / (yStep * downscalingFactor)));
+            // const auto xId = static_cast<int>(std::floor((labelBox.x - xMin) / (xStep * downscalingFactor)));
+            // const auto yId = static_cast<int>(std::floor((labelBox.y - yMin) / (yStep * downscalingFactor)));
 
-            // const auto xId = bestAnchorxId;
-            // const auto yId = bestAnchoryId;
+            const auto xId = bestAnchor_xId;
+            const auto yId = bestAnchor_yId;
             const float diag = std::sqrt(std::pow(bestAnchor.width, 2) + std::pow(bestAnchor.length, 2));
 
             tensor.mutable_at(objectCount, xId, yId, bestAnchorId, 0) = 1;
