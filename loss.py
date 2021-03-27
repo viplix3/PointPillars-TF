@@ -16,13 +16,17 @@ class PointPillarNetworkLoss:
         self.heading_weight = float(params.heading_weight)
         self.class_weight = float(params.class_weight)
 
+        # loss functions
+        self.categorical_cross_entropy = tf.keras.losses.CategoricalCrossentropy(from_logits=False, label_smoothing=0, 
+                                        reduction=tf.keras.losses.Reduction.NONE, name='categorical_crossentropy')
+
     def losses(self):
         return [self.focal_loss, self.loc_loss, self.size_loss, self.angle_loss, self.heading_loss, self.class_loss]
 
     def focal_loss(self, y_true: tf.Tensor, y_pred: tf.Tensor):
         """ y_true value from occ in {-1, 0, 1}, i.e. {bad match, neg box, pos box} """
 
-        self.mask = tf.equal(y_true, 1)
+        self.mask = tf.equal(y_true, 1.)
 
         cross_entropy = K.binary_crossentropy(y_true, y_pred)
 
@@ -35,7 +39,7 @@ class PointPillarNetworkLoss:
         focal_loss = gamma_factor * alpha_factor * cross_entropy
 
         neg_mask = tf.equal(y_true, 0)
-        thr = tfp.stats.percentile(tf.boolean_mask(focal_loss, neg_mask), 90.)
+        thr = tfp.stats.percentile(tf.boolean_mask(focal_loss, neg_mask), 80.) # changed percentile from 90 to 80
         hard_neg_mask = tf.greater(focal_loss, thr)
         # mask = tf.logical_or(tf.equal(y_true, 0), tf.equal(y_true, 1))
         mask = tf.logical_or(self.mask, tf.logical_and(neg_mask, hard_neg_mask))
@@ -75,6 +79,7 @@ class PointPillarNetworkLoss:
         return self.heading_weight * tf.reduce_mean(masked_loss)
 
     def class_loss(self, y_true: tf.Tensor, y_pred: tf.Tensor):
-        loss = tf.nn.softmax_cross_entropy_with_logits(labels=y_true, logits=y_pred)
+        # loss = tf.nn.softmax_cross_entropy_with_logits(labels=y_true, logits=y_pred)
+        loss = self.categorical_cross_entropy(y_true, y_pred)
         masked_loss = tf.boolean_mask(loss, self.mask)
         return self.class_weight * tf.reduce_mean(masked_loss)
