@@ -16,10 +16,6 @@ class PointPillarNetworkLoss:
         self.heading_weight = float(params.heading_weight)
         self.class_weight = float(params.class_weight)
 
-        # loss functions
-        self.categorical_cross_entropy = tf.keras.losses.CategoricalCrossentropy(from_logits=False, label_smoothing=0, 
-                                        reduction=tf.keras.losses.Reduction.NONE, name='categorical_crossentropy')
-
     def losses(self):
         return [self.focal_loss, self.loc_loss, self.size_loss, self.angle_loss, self.heading_loss, self.class_loss]
 
@@ -79,7 +75,6 @@ class PointPillarNetworkLoss:
         return self.heading_weight * tf.reduce_mean(masked_loss)
 
     def class_loss(self, y_true: tf.Tensor, y_pred: tf.Tensor):
-        # loss = tf.nn.softmax_cross_entropy_with_logits(labels=y_true, logits=y_pred)
-        loss = self.categorical_cross_entropy(y_true, y_pred)
+        loss = tf.nn.softmax_cross_entropy_with_logits(labels=y_true, logits=y_pred)
         masked_loss = tf.boolean_mask(loss, self.mask)
         return self.class_weight * tf.reduce_mean(masked_loss)

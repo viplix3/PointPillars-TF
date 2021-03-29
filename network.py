@@ -116,10 +116,10 @@ def build_point_pillar_graph(params: Parameters, batch_size: int = Parameters.ba
 
     heading = tf.keras.layers.Conv2D(nb_anchors, (1, 1), name="heading/conv2d", activation="sigmoid")(concat)
 
-    clf = tf.keras.layers.Conv2D(nb_anchors * nb_classes, (1, 1), name="clf/conv2d", activation="softmax")(concat)
+    clf = tf.keras.layers.Conv2D(nb_anchors * nb_classes, (1, 1), name="clf/conv2d", activation="linear")(concat)
     clf = tf.keras.layers.Reshape(tuple(i // 2 for i in image_size) + (nb_anchors, nb_classes), name="clf/reshape")(clf)
 
     pillar_net = tf.keras.models.Model([input_pillars, input_indices], [occ, loc, size, angle, heading, clf])
-    print(pillar_net.summary())
+    # print(pillar_net.summary())
 
     return pillar_net
