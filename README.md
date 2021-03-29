@@ -11,8 +11,8 @@ Major changes in this repo compared to the original one:
  - Unit-tests for checking code functionality.
 
 TODO:
- [] Data augmentation (currently no data augmentation is there).
- [] Maybe some other stuff.
+ - [] Data augmentation (currently no data augmentation is there).
+ - [] Maybe some other stuff.
 
 Please note that I have not been able to achieve the same performance as claimed in the paper.
 I am still working on it. 
