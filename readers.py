@@ -1,4 +1,5 @@
 import abc
+from config import DataParameters
 from typing import List
 
 import numpy as np
@@ -34,7 +35,7 @@ class DataReader:
         raise NotImplementedError
 
 
-class KittiDataReader(DataReader):
+class KittiDataReader(DataReader, DataParameters):
 
     def __init__(self):
         super(KittiDataReader, self).__init__()
@@ -61,7 +62,7 @@ class KittiDataReader(DataReader):
                     float(values[14]) # BB rotation along y-axis
                 )
 
-                if element.classification == "DontCare":
+                if element.classification not in DataParameters.classes.keys():
                     continue
                 else:
                     elements.append(element)

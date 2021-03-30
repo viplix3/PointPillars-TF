@@ -37,13 +37,13 @@ class BBox(Parameters, tuple):
         self.conf = bb_conf
         self.class_dict = { 0: "Car",
                             1: "Pedestrian",
-                            2: "Cyclist",
-                            3: "Misc."}
-                            # 3: 2}
+                            2: "Cyclist"} ,
+                            # 3: "Misc."}
+                            # 3: "Car"}
 
     def __str__(self):
-        return "BB | Cls: %s, x: %f, y: %f, z: %f, l: %f, w: %f, h: %f, yaw: %f, conf: %f" % (
-            self.cls, self.x, self.y, self.z, self.length, self.width, self.height, self.yaw, self.conf)
+        return "BB | Cls: %s, x: %f, y: %f, z: %f, l: %f, w: %f, h: %f, yaw: %f, heading: %f, conf: %f" % (
+            self.cls, self.x, self.y, self.z, self.length, self.width, self.height, self.yaw, self.heading, self.conf)
     
     @staticmethod
     def bb_class_colour_map(class_name: str):
@@ -59,16 +59,19 @@ class BBox(Parameters, tuple):
     def to_kitti_format(self, P2: np.ndarray, R0: np.ndarray, V2C: np.ndarray):
         self.x, self.y, self.z = BBox.lidar_to_camera(self.x, self.y, self.z, R0, V2C) # velodyne to camera coordinate projection
 
-        # TODO: Review and test 2D BB logic/code
-
         # model predicts angles w.r.t. z-axis in LiDAR coordinate frame
         # changing it to camera coordinate, where the angle is w.r.t y-axis
         # z-axis in LiDAR coordinate frame == -(y-axis) of camera coordinate frame
-        self.yaw = - self.yaw
+
+        if(int(self.heading) == 1):
+            self.yaw = - self.yaw 
+
         bbox_2d_image_coordinate, bbox_3d_image_coordinate = self.get_2D_BBox(P2) # [num_boxes, box_attributes]
 
         # TODO: Check alpha calculation
-        alpha = -1.0
+        # alpha = -1.0
+        beta = np.arctan2(self.z, self.x)
+        alpha = -np.sign(beta) * np.pi/2 + beta + self.yaw
 
         return [self.class_dict[self.cls], -1.0, -1, alpha, bbox_2d_image_coordinate[0][0], bbox_2d_image_coordinate[0][1],
                                             bbox_2d_image_coordinate[0][2], bbox_2d_image_coordinate[0][3],
@@ -82,7 +85,7 @@ class BBox(Parameters, tuple):
             3. Multiply with LiDAR to camera projection matrix
             4. Multiply with camera to image projection matrix
         """
-        yaw_rotation_matrix = BBox.get_y_axis_rotation_matrix(self.yaw) # rotation matrix around y-axis
+        yaw_rotation_matrix = BBox.get_y_axis_rotation_matrix(-self.yaw) # rotation matrix around y-axis
         l = self.length
         w = self.width
         h = self.height
@@ -110,7 +113,9 @@ class BBox(Parameters, tuple):
         bb_3d_corners[2, :] = bb_3d_corners[2, :] + self.z
 
         # camera coordinate frame to image coordinate frame box projection
-        bbox_2d_image, bbox_corners_image = BBox.camera_to_image(bb_3d_corners, P)
+        img_width = (self.x_max - self.x_min) / self.x_step
+        img_height = (self.y_max - self.y_min) / self.y_step
+        bbox_2d_image, bbox_corners_image = BBox.camera_to_image(bb_3d_corners, P, img_width, img_height)
         return bbox_2d_image, bbox_corners_image
 
     @staticmethod
@@ -149,7 +154,7 @@ class BBox(Parameters, tuple):
         return box_centroid[:3]
 
     @staticmethod
-    def camera_to_image(bbox_3d_corners: np.ndarray, P: np.ndarray):
+    def camera_to_image(bbox_3d_corners: np.ndarray, P: np.ndarray, img_width: float, img_height: float):
         """ box is in camera coordinate frame and reference roatation has already been done to the box 
             1. Convert the BB coordinated into an homogenous matrix
             2. Project the matrix from camera coodinate frame to image coordinate frame using projection matrix P
@@ -161,6 +166,27 @@ class BBox(Parameters, tuple):
         box_y_coords = box_coords_image[1, :] / box_coords_image[2, :] # Normalizing all the y-coords with z-coords
         xmin, xmax = np.min(box_x_coords), np.max(box_x_coords)
         ymin, ymax = np.min(box_y_coords), np.max(box_y_coords)
+
+        # xmin = np.expand_dims(xmin, axis=0)
+        # xmax = np.expand_dims(xmax, axis=0)
+        # ymin = np.expand_dims(ymin, axis=0)
+        # ymax = np.expand_dims(ymax, axis=0)
+
+        # valid_boxes_x = np.where(xmin > xmax)
+        # valid_boxes_y = np.where(ymin > ymax)
+
+        # xmin, xmax, ymin, ymax = xmin[valid_boxes_x], xmax[valid_boxes_x], ymin[valid_boxes_x], ymax[valid_boxes_x]
+        # xmin, xmax, ymin, ymax = xmin[valid_boxes_y], xmax[valid_boxes_y], ymin[valid_boxes_y], ymax[valid_boxes_y]
+
+        # xmin[np.where(xmin < 0)] = 0
+        # xmax[np.where(xmax > img_width)] = img_width
+        # ymin[np.where(ymin < 0)] = 0
+        # ymax[np.where(ymax > img_height)] = img_height
+
+        # xmin = np.squeeze(xmin, axis=0)
+        # xmax = np.squeeze(xmax, axis=0)
+        # ymin = np.squeeze(ymin, axis=0)
+        # ymax = np.squeeze(ymax, axis=0)
 
         bbox_2d_image = np.concatenate((xmin.reshape(-1, 1), ymin.reshape(-1, 1), xmax.reshape(-1, 1), ymax.reshape(-1, 1)), axis=1)
         bbox_3d_image = np.concatenate((box_x_coords.reshape(-1, 8, 1), box_y_coords.reshape(-1, 8, 1)), axis=2)
