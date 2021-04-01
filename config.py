@@ -10,8 +10,8 @@ class GridParameters:
     y_max = 40.32
     y_step = 0.16
 
-    z_min = -1.0
-    z_max = 3.0
+    z_min = -3.0
+    z_max = 1.0
 
     # derived parameters
     Xn_f = float(x_max - x_min) / x_step
@@ -26,14 +26,14 @@ class GridParameters:
 class DataParameters:
 
     classes = {"Car":               0,
-               "Van":               0,
+               "Van":               3,
                "Pedestrian":        1,
                "Person_sitting":    1,
-               "Cyclist":           2} #,
-               # "Truck":             3,
-               # "Tram":              3,
-               # "Misc":              3,
-               # }
+               "Cyclist":           2,
+               "Truck":             3,
+               "Tram":              3,
+               "Misc":              3,
+               }
 
     nb_classes = len(np.unique(list(classes.values())))
     assert nb_classes == np.max(np.unique(list(classes.values()))) + 1, 'Starting class indexing at zero.'
@@ -46,16 +46,17 @@ class NetworkParameters:
 
     max_points_per_pillar = 100
     max_pillars = 12000
-    nb_features = 7
+    nb_features = 9
     nb_channels = 64
     downscaling_factor = 2
 
     # length, width, height, z-center, orientation
-    anchor_dims = np.array([[3.9, 1.6, 1.56, -1, 0],
-                            [3.9, 1.6, 1.56, -1, 1.5708],
-                            [0.8, 0.6, 1.73, -0.6, 0],
-                            [0.8, 0.6, 1.73, -0.6, 1.5708],
+    anchor_dims = np.array([[3.9, 1.6, 1.56, -1, 0], # car anchor
+                            [3.9, 1.6, 1.56, -1, 1.5708], # car-anchor rotated by 90 degrees
+                            [0.8, 0.6, 1.73, -0.6, 0], # pedestrian-anchor
+                            [0.8, 0.6, 1.73, -0.6, 1.5708], # pedestrian-anchor rotated by 90 degrees
                             ], dtype=np.float32).tolist()
+    # TODO: Add cyclist anchor
     nb_dims = 3
 
     positive_iou_threshold = 0.6
