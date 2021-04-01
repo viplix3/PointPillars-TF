@@ -110,7 +110,7 @@ class PointPillarsTest(unittest.TestCase):
             self.camera_to_lidar_box_projection(bb_3d_corners)
 
             # camera coordinate frame to image coordinate frame box projection
-            bbox_2d_image, bbox_corners_image = BBox.camera_to_image(bb_3d_corners, self.calib["P2"])
+            bbox_2d_image, bbox_corners_image = BBox.camera_to_image(bb_3d_corners, self.calib["P2"], -1, -1)
 
             # Plotting the 3D BB
             self.image_data = draw_projected_box3d(self.image_data, bbox_corners_image)
