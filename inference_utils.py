@@ -24,6 +24,8 @@ class BBox(Parameters, tuple):
         self.length = bb_length
         self.width = bb_width
         self.height = bb_height
+
+        self.z -= self.height /2.
         
         # self.length -= 0.3
         # self.width -= 0.3
@@ -37,8 +39,8 @@ class BBox(Parameters, tuple):
         self.conf = bb_conf
         self.class_dict = { 0: "Car",
                             1: "Pedestrian",
-                            2: "Cyclist"} ,
-                            # 3: "Misc."}
+                            2: "Cyclist",
+                            3: "Misc."}
                             # 3: "Car"}
 
     def __str__(self):
@@ -62,9 +64,10 @@ class BBox(Parameters, tuple):
         # model predicts angles w.r.t. z-axis in LiDAR coordinate frame
         # changing it to camera coordinate, where the angle is w.r.t y-axis
         # z-axis in LiDAR coordinate frame == -(y-axis) of camera coordinate frame
+        self.yaw = -self.yaw - np.pi/2
 
-        if(int(self.heading) == 1):
-            self.yaw = - self.yaw 
+        # if(int(self.heading) == 0):
+        #     self.yaw = - self.yaw 
 
         bbox_2d_image_coordinate, bbox_3d_image_coordinate = self.get_2D_BBox(P2) # [num_boxes, box_attributes]
 
@@ -85,7 +88,7 @@ class BBox(Parameters, tuple):
             3. Multiply with LiDAR to camera projection matrix
             4. Multiply with camera to image projection matrix
         """
-        yaw_rotation_matrix = BBox.get_y_axis_rotation_matrix(-self.yaw) # rotation matrix around y-axis
+        yaw_rotation_matrix = BBox.get_y_axis_rotation_matrix(self.yaw) # rotation matrix around y-axis
         l = self.length
         w = self.width
         h = self.height

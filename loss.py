@@ -35,7 +35,7 @@ class PointPillarNetworkLoss:
         focal_loss = gamma_factor * alpha_factor * cross_entropy
 
         neg_mask = tf.equal(y_true, 0)
-        thr = tfp.stats.percentile(tf.boolean_mask(focal_loss, neg_mask), 80.) # changed percentile from 90 to 80
+        thr = tfp.stats.percentile(tf.boolean_mask(focal_loss, neg_mask), 90.) # changed percentile from 90 to 80
         hard_neg_mask = tf.greater(focal_loss, thr)
         # mask = tf.logical_or(tf.equal(y_true, 0), tf.equal(y_true, 1))
         mask = tf.logical_or(self.mask, tf.logical_and(neg_mask, hard_neg_mask))
