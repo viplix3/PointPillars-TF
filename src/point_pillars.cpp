@@ -81,7 +81,7 @@ pybind11::tuple createPillars(pybind11::array_t<float> points,
     pybind11::array_t<float> tensor;
     pybind11::array_t<int> indices;
 
-    tensor.resize({1, maxPillars, maxPointsPerPillar, 7});
+    tensor.resize({1, maxPillars, maxPointsPerPillar, 9});
     indices.resize({1, maxPillars, 3}); // Will hold the discretized indices of the pillar
 
     int pillarId = 0;
@@ -127,20 +127,26 @@ pybind11::tuple createPillars(pybind11::array_t<float> points,
         int pointId = 0;
         for (const auto& p: pair.second) // Iterating through all the points of current hash (pillar)
         {
+            // Point data population inside the pillar
             if (pointId >= maxPointsPerPillar)
             {
                 // Number of populated points exceeds the maximum allowed number of points per pillar
                 break;
             }
 
-            // Point data population inside the pillar
-            tensor.mutable_at(0, pillarId, pointId, 0) = p.x - (xIndex * xStep + xMin);
-            tensor.mutable_at(0, pillarId, pointId, 1) = p.y - (yIndex * yStep + yMin);
-            tensor.mutable_at(0, pillarId, pointId, 2) = p.z - zMid;
+            // Raw LiDAR point data
+            tensor.mutable_at(0, pillarId, pointId, 0) = p.x;
+            tensor.mutable_at(0, pillarId, pointId, 1) = p.y;
+            tensor.mutable_at(0, pillarId, pointId, 2) = p.z;
             tensor.mutable_at(0, pillarId, pointId, 3) = p.intensity;
+            // Distance from the aithrmetic mean
             tensor.mutable_at(0, pillarId, pointId, 4) = p.xc;
             tensor.mutable_at(0, pillarId, pointId, 5) = p.yc;
             tensor.mutable_at(0, pillarId, pointId, 6) = p.zc;
+            // Offset from the pillar center
+            tensor.mutable_at(0, pillarId, pointId, 7) = ((p.x - xMin) / xStep) - xIndex;
+            tensor.mutable_at(0, pillarId, pointId, 8) = ((p.y - yMin) / yStep) - yIndex;
+        
 
             pointId++;
         }
