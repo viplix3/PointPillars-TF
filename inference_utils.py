@@ -171,7 +171,7 @@ class BBox(Parameters, tuple):
         xmin = np.clip(xmin, 0, img_width)
         xmax = np.clip(xmax, 0, img_width)
         ymin = np.clip(ymin, 0, img_height)
-        ymin = np.clip(ymin, 0, img_height)
+        ymax = np.clip(ymax, 0, img_height)
 
         bbox_2d_image = np.concatenate((xmin.reshape(-1, 1), ymin.reshape(-1, 1), xmax.reshape(-1, 1), ymax.reshape(-1, 1)), axis=1)
         bbox_3d_image = np.concatenate((box_x_coords.reshape(-1, 8, 1), box_y_coords.reshape(-1, 8, 1)), axis=2)
