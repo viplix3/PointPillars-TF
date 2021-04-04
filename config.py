@@ -26,10 +26,10 @@ class GridParameters:
 class DataParameters:
 
     classes = {"Car":               0,
-               "Van":               3,
                "Pedestrian":        1,
                "Person_sitting":    1,
                "Cyclist":           2,
+               "Van":               3,
                "Truck":             3,
                "Tram":              3,
                "Misc":              3,
