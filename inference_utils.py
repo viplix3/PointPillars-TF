@@ -24,6 +24,8 @@ class BBox(Parameters, tuple):
         self.length = bb_length
         self.width = bb_width
         self.height = bb_height
+
+        self.x -= self.height/2.
         
         # self.length -= 0.3
         # self.width -= 0.3
