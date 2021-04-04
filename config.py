@@ -3,11 +3,11 @@ import numpy as np
 
 class GridParameters:
     x_min = 0.0
-    x_max = 48.00
+    x_max = 48.64
     x_step = 0.16
 
-    y_min = -24.00
-    y_max = 24.00
+    y_min = -24.32
+    y_max = 24.32
     y_step = 0.16
 
     z_min = -2.5
