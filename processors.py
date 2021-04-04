@@ -80,10 +80,10 @@ class DataProcessor(Parameters):
             # yaw angle has been provided w.r.t y-axis in the camera coordinate
             # label.yaw = -(label.yaw + np.pi/2) # Rotation w.r.t z-axis of LiDAR coordinate frame
             label.yaw -= np.pi/2
-            # while label.yaw < -np.pi:
-            #     label.yaw += (np.pi * 2)
-            # while label.yaw > np.pi:
-            #     label.yaw -= (np.pi * 2)
+            while label.yaw < -np.pi:
+                label.yaw += (np.pi * 2)
+            while label.yaw > np.pi:
+                label.yaw -= (np.pi * 2)
         return labels
 
     @staticmethod
@@ -137,7 +137,7 @@ class DataProcessor(Parameters):
         target_yaw = np.array([label.yaw for label in labels], dtype=np.float32)
         target_class = np.array([self.classes[label.classification] for label in labels], dtype=np.int32)
 
-        # assert np.all(target_yaw >= -np.pi) & np.all(target_yaw <= np.pi)
+        assert np.all(target_yaw >= -np.pi) & np.all(target_yaw <= np.pi)
         assert len(target_positions) == len(target_dimension) == len(target_yaw) == len(target_class)
 
         target, pos, neg = createPillarsTarget(target_positions,
