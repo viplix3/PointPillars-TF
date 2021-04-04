@@ -66,7 +66,7 @@ class BBox(Parameters, tuple):
         self.yaw = self.yaw + np.pi/2
 
         # if(int(self.heading) == 0):
-        #     self.yaw = 2*np.pi + self.yaw
+        #   self.yaw = 2*np.pi + self.yaw
 
         bbox_2d_image_coordinate, bbox_3d_image_coordinate = self.get_2D_BBox(P2) # [num_boxes, box_attributes]
 
