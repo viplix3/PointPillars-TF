@@ -37,10 +37,7 @@ class BBox(Parameters, tuple):
         self.heading = bb_heading
         self.cls = bb_cls
         self.conf = bb_conf
-        self.class_dict = { 0: "Car",
-                            1: "Pedestrian",
-                            2: "Cyclist",
-                            3: "Misc."}
+        self.class_dict = { 0: "Car"}
 
     def __str__(self):
         return "BB | Cls: %s, x: %f, y: %f, z: %f, l: %f, w: %f, h: %f, yaw: %f, heading: %f, conf: %f" % (
