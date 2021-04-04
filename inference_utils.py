@@ -25,7 +25,7 @@ class BBox(Parameters, tuple):
         self.width = bb_width
         self.height = bb_height
 
-        self.x -= self.height/2.
+        self.z -= self.height/2.
         
         # self.length -= 0.3
         # self.width -= 0.3
@@ -39,9 +39,8 @@ class BBox(Parameters, tuple):
         self.conf = bb_conf
         self.class_dict = { 0: "Car",
                             1: "Pedestrian",
-                            2: "Cyclist"} ,
-                            # 3: "Misc."}
-                            # 3: "Car"}
+                            2: "Cyclist",
+                            3: "Misc."}
 
     def __str__(self):
         return "BB | Cls: %s, x: %f, y: %f, z: %f, l: %f, w: %f, h: %f, yaw: %f, heading: %f, conf: %f" % (

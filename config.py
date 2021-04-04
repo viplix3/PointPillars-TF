@@ -51,11 +51,12 @@ class NetworkParameters:
     downscaling_factor = 2
 
     # length, width, height, z-center, orientation
-    anchor_dims = np.array([[3.9, 1.6, 1.56, -1, 0],
-                            [3.9, 1.6, 1.56, -1, 1.5708],
-                            [0.8, 0.6, 1.73, -0.6, 0],
-                            [0.8, 0.6, 1.73, -0.6, 1.5708],
+    anchor_dims = np.array([[3.9, 1.6, 1.56, -1, 0], # car anchor
+                            [3.9, 1.6, 1.56, -1, 1.5708], # car-anchor rotated by 90 degrees
+                            [0.8, 0.6, 1.73, -0.6, 0], # pedestrian-anchor
+                            [0.8, 0.6, 1.73, -0.6, 1.5708], # pedestrian-anchor rotated by 90 degrees
                             ], dtype=np.float32).tolist()
+    # TODO: Add cyclist anchor
     nb_dims = 3
 
     positive_iou_threshold = 0.6
