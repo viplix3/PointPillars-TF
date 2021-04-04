@@ -65,7 +65,7 @@ class BBox(Parameters, tuple):
         # z-axis in LiDAR coordinate frame == -(y-axis) of camera coordinate frame
 
         if(int(self.heading) == 1):
-            self.yaw = - self.yaw 
+            self.yaw = - self.yaw
 
         bbox_2d_image_coordinate, bbox_3d_image_coordinate = self.get_2D_BBox(P2) # [num_boxes, box_attributes]
 
@@ -168,26 +168,10 @@ class BBox(Parameters, tuple):
         xmin, xmax = np.min(box_x_coords), np.max(box_x_coords)
         ymin, ymax = np.min(box_y_coords), np.max(box_y_coords)
 
-        # xmin = np.expand_dims(xmin, axis=0)
-        # xmax = np.expand_dims(xmax, axis=0)
-        # ymin = np.expand_dims(ymin, axis=0)
-        # ymax = np.expand_dims(ymax, axis=0)
-
-        # valid_boxes_x = np.where(xmin > xmax)
-        # valid_boxes_y = np.where(ymin > ymax)
-
-        # xmin, xmax, ymin, ymax = xmin[valid_boxes_x], xmax[valid_boxes_x], ymin[valid_boxes_x], ymax[valid_boxes_x]
-        # xmin, xmax, ymin, ymax = xmin[valid_boxes_y], xmax[valid_boxes_y], ymin[valid_boxes_y], ymax[valid_boxes_y]
-
-        # xmin[np.where(xmin < 0)] = 0
-        # xmax[np.where(xmax > img_width)] = img_width
-        # ymin[np.where(ymin < 0)] = 0
-        # ymax[np.where(ymax > img_height)] = img_height
-
-        # xmin = np.squeeze(xmin, axis=0)
-        # xmax = np.squeeze(xmax, axis=0)
-        # ymin = np.squeeze(ymin, axis=0)
-        # ymax = np.squeeze(ymax, axis=0)
+        xmin = np.clip(xmin, 0, img_width)
+        xmax = np.clip(xmax, 0, img_width)
+        ymin = np.clip(ymin, 0, img_height)
+        ymin = np.clip(ymin, 0, img_height)
 
         bbox_2d_image = np.concatenate((xmin.reshape(-1, 1), ymin.reshape(-1, 1), xmax.reshape(-1, 1), ymax.reshape(-1, 1)), axis=1)
         bbox_3d_image = np.concatenate((box_x_coords.reshape(-1, 8, 1), box_y_coords.reshape(-1, 8, 1)), axis=2)
