@@ -3,15 +3,15 @@ import numpy as np
 
 class GridParameters:
     x_min = 0.0
-    x_max = 80.64
+    x_max = 48.00
     x_step = 0.16
 
-    y_min = -40.32
-    y_max = 40.32
+    y_min = -20.00
+    y_max = 20.00
     y_step = 0.16
 
-    z_min = -1.0
-    z_max = 3.0
+    z_min = -2.5
+    z_max = 0.5
 
     # derived parameters
     Xn_f = float(x_max - x_min) / x_step
@@ -25,14 +25,9 @@ class GridParameters:
 
 class DataParameters:
 
-    classes = {"Car":               0,
-               "Pedestrian":        1,
-               "Person_sitting":    1,
-               "Cyclist":           2,
-               "Van":               3,
-               "Truck":             3,
-               "Tram":              3,
-               "Misc":              3,
+    classes = {"Pedestrian":        0,
+               "Person_sitting":    0,
+               "Cyclist":           1,
                }
 
     nb_classes = len(np.unique(list(classes.values())))
@@ -51,16 +46,16 @@ class NetworkParameters:
     downscaling_factor = 2
 
     # length, width, height, z-center, orientation
-    anchor_dims = np.array([[3.9, 1.6, 1.56, -1, 0], # car anchor
-                            [3.9, 1.6, 1.56, -1, 1.5708], # car-anchor rotated by 90 degrees
-                            [0.8, 0.6, 1.73, -0.6, 0], # pedestrian-anchor
+    anchor_dims = np.array([[0.8, 0.6, 1.73, -0.6, 0], # pedestrian-anchor
                             [0.8, 0.6, 1.73, -0.6, 1.5708], # pedestrian-anchor rotated by 90 degrees
+                            [1.76, 0.6, 1.73, -0.6, 0], # cyclist-anchor rotated by 90 degrees
+                            [1.76, 0.6, 1.73, -0.6, 1.5708], # cyclist-anchor rotated by 90 degrees
                             ], dtype=np.float32).tolist()
     # TODO: Add cyclist anchor
     nb_dims = 3
 
-    positive_iou_threshold = 0.6
-    negative_iou_threshold = 0.3
+    positive_iou_threshold = 0.5
+    negative_iou_threshold = 0.35
     batch_size = 4
     total_training_epochs = 160
     iters_to_decay = 66780 # 101040.    # 15 * 4 * ceil(6733. / 4) --> every 15 epochs on 6733 kitti samples, cf. pillar paper
