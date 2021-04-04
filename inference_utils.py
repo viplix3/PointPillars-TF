@@ -25,7 +25,7 @@ class BBox(Parameters, tuple):
         self.width = bb_width
         self.height = bb_height
 
-        self.z -= self.height /2.
+        self.z -= self.height/2.
         
         # self.length -= 0.3
         # self.width -= 0.3
@@ -67,7 +67,7 @@ class BBox(Parameters, tuple):
         self.yaw = self.yaw + np.pi/2
 
         # if(int(self.heading) == 0):
-        #      self.yaw = 2*np.pi + self.yaw 
+        #      self.yaw = 2*np.pi + self.yaw
 
         bbox_2d_image_coordinate, bbox_3d_image_coordinate = self.get_2D_BBox(P2) # [num_boxes, box_attributes]
 
