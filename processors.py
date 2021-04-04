@@ -79,7 +79,11 @@ class DataProcessor(Parameters):
 
             # yaw angle has been provided w.r.t y-axis in the camera coordinate
             # label.yaw = -(label.yaw + np.pi/2) # Rotation w.r.t z-axis of LiDAR coordinate frame
-            label.yaw = -(label.yaw + np.pi/2.)
+            label.yaw -= np.pi / 2 
+            # while label.yaw < -np.pi:
+            #     label.yaw += (np.pi * 2)
+            # while label.yaw > np.pi:
+            #     label.yaw -= (np.pi * 2)
         return labels
 
     @staticmethod
