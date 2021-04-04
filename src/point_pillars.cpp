@@ -146,7 +146,6 @@ pybind11::tuple createPillars(pybind11::array_t<float> points,
             // Offset from the pillar center
             tensor.mutable_at(0, pillarId, pointId, 7) = ((p.x - xMin) / xStep) - xIndex;
             tensor.mutable_at(0, pillarId, pointId, 8) = ((p.y - yMin) / yStep) - yIndex;
-        
 
             pointId++;
         }
