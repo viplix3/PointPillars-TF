@@ -48,10 +48,6 @@ class DataProcessor(Parameters):
     def camera_to_lidar(self, labels: List[Label3D], P: np.ndarray, R: np.ndarray, V2C: np.ndarray):
         """ Transforms all the box parameters from camera coordinate frame to LiDAR coordinate frame """
         for label in labels:
-            # print("================================================== Before transformation/Camera coordinate frame==================================================")
-            # print("x: {}\ty: {}\tz: {}\tl: {}\tw: {}\th: {}\tyaw: {}\tclass: {}".format(label.centroid[0], label.centroid[1], 
-            #     label.centroid[2], label.dimension[2], label.dimension[1], label.dimension[0], label.yaw, label.classification))
-
             # In camera coordinate frame: length (or depth) will be along z-axis, width will be along x-axis, height will be along y-axis
             # In lidar coordinate frame: length (or depth) will be along x-axis, width will be along y-axis, height will be along z-axis
             label.dimension = label.dimension[[2, 1, 0]] # h, w, l -> l, w, h, now they are alinged to the LiDAR coordinate frame
@@ -69,7 +65,7 @@ class DataProcessor(Parameters):
             label_centroid_rectified = np.matmul(DataProcessor.inverse_rigid_trans(V2C), label_centroid_rectified)
             label_centroid_rectified = label_centroid_rectified[:3]
             label.centroid = label_centroid_rectified
-            label.centroid[2] += label.dimension[2]/2.
+            label.centroid[2] += label.dimension[2]/2. # Getting z-center of the 3D BB
 
             # # Adding an offset to the length and width values
             # label.dimension[0] = label.dimension[0] + 0.3 # Adding some constant factor as GT values are very small
@@ -85,10 +81,6 @@ class DataProcessor(Parameters):
             # we need to take negative of provided yaw angle to transform it from camera coordinate to LiDAR coordinate
             label.yaw = -label.yaw # Rotation w.r.t z-axis of LiDAR coordinate frame
 
-            # print("================================================== After transformation/LiDAR coordinate frame==================================================")
-            # print("x: {}\ty: {}\tz: {}\tl: {}\tw: {}\th: {}\tyaw: {}\tclass: {}".format(label.centroid[0], label.centroid[1], 
-            #     label.centroid[2], label.dimension[0], label.dimension[1], label.dimension[2], label.yaw, label.classification))
-            
         return labels
 
     @staticmethod
