@@ -26,14 +26,14 @@ class GridParameters:
 class DataParameters:
 
     classes = {"Car":               0,
-               "Van":               0,
                "Pedestrian":        1,
                "Person_sitting":    1,
-               "Cyclist":           2} #,
-               # "Truck":             3,
-               # "Tram":              3,
-               # "Misc":              3,
-               # }
+               "Cyclist":           2,
+               "Van":               3,
+               "Truck":             3,
+               "Tram":              3,
+               "Misc":              3,
+               }
 
     nb_classes = len(np.unique(list(classes.values())))
     assert nb_classes == np.max(np.unique(list(classes.values()))) + 1, 'Starting class indexing at zero.'
