@@ -63,10 +63,10 @@ class BBox(Parameters, tuple):
         # model predicts angles w.r.t. z-axis in LiDAR coordinate frame
         # changing it to camera coordinate, where the angle is w.r.t y-axis
         # z-axis in LiDAR coordinate frame == -(y-axis) of camera coordinate frame
-        self.yaw = self.yaw + np.pi/2
+        self.yaw = - self.yaw - np.pi/2
 
-        if(int(self.heading) == 0):
-            self.yaw = - self.yaw
+        # if(int(self.heading) == 0):
+        #    self.yaw = - self.yaw
 
         bbox_2d_image_coordinate, bbox_3d_image_coordinate = self.get_2D_BBox(P2) # [num_boxes, box_attributes]
 
