@@ -205,7 +205,7 @@ def draw_projected_box3d(image, qs, heading, color=(255, 0, 255), thickness=2):
         i, j = k, k + 4
         cv.line(image, (qs[i, 0], qs[i, 1]), (qs[j, 0], qs[j, 1]), color, thickness)
     if heading == 1:
-        cv.line(image, (qs[3, 0], qs[3, 1]), (qs[6, 0], qs[6, 1]), [255, 255, 0], thickness)
+        cv.line(image, (qs[2, 0], qs[2, 1]), (qs[7, 0], qs[7, 1]), [255, 255, 0], thickness)
     else:
         cv.line(image, (qs[0, 0], qs[0, 1]), (qs[5, 0], qs[5, 1]), [255, 255, 0], thickness)
 
