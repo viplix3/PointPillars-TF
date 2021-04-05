@@ -521,8 +521,8 @@ std::tuple<pybind11::array_t<float>, int, int> createPillarsTarget(const pybind1
                         tensor.mutable_at(objectCount, xId, yId, anchorCount, 5) = std::log(labelBox.width / anchorBox.width);
                         tensor.mutable_at(objectCount, xId, yId, anchorCount, 6) = std::log(labelBox.height / anchorBox.height);
 
-                        tensor.mutable_at(objectCount, xId, yId, anchorCount, 7) = std::sin(labelBox.yaw - anchorBox.yaw); //delta yaw
-                        if (labelBox.yaw > 0) // Is yaw > 0
+                        tensor.mutable_at(objectCount, xId, yId, anchorCount, 7) = (labelBox.yaw - anchorBox.yaw); //delta yaw
+                        if ((-0.5 * M_PI) < labelBox.yaw <= (0.5 * M_PI))
                         {
                             tensor.mutable_at(objectCount, xId, yId, anchorCount, 8) = 1; 
                         }
@@ -577,7 +577,7 @@ std::tuple<pybind11::array_t<float>, int, int> createPillarsTarget(const pybind1
             tensor.mutable_at(objectCount, xId, yId, bestAnchorId, 5) = std::log(labelBox.width / bestAnchor.width);
             tensor.mutable_at(objectCount, xId, yId, bestAnchorId, 6) = std::log(labelBox.height / bestAnchor.height);
 
-            tensor.mutable_at(objectCount, xId, yId, bestAnchorId, 7) = std::sin(labelBox.yaw - bestAnchor.yaw);
+            tensor.mutable_at(objectCount, xId, yId, bestAnchorId, 7) = (labelBox.yaw - bestAnchor.yaw);
             if ((-0.5 * M_PI) < labelBox.yaw <= (0.5 * M_PI))
             {
                 tensor.mutable_at(objectCount, xId, yId, bestAnchorId, 8) = 1;
