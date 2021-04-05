@@ -578,7 +578,7 @@ std::tuple<pybind11::array_t<float>, int, int> createPillarsTarget(const pybind1
             tensor.mutable_at(objectCount, xId, yId, bestAnchorId, 6) = std::log(labelBox.height / bestAnchor.height);
 
             tensor.mutable_at(objectCount, xId, yId, bestAnchorId, 7) = std::sin(labelBox.yaw - bestAnchor.yaw);
-            if (labelBox.yaw > 0)
+            if ((-0.5 * M_PI) < labelBox.yaw <= (0.5 * M_PI))
             {
                 tensor.mutable_at(objectCount, xId, yId, bestAnchorId, 8) = 1;
             }
