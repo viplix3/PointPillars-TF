@@ -1,3 +1,22 @@
+
+# Codebase Information
+The base code has been taken from [tyagi-iiitv/PointPillars](https://github.com/tyagi-iiitv/PointPillars) GitHub repository.
+As I found some bugs in the original repository, and it was not being actively maintained, I decided to create an alternate repository.
+
+Major changes in this repo compared to the original one:
+ - Correct transformation of the KITTI GT from camera coordinate frame to LiDAR corodinate frame.
+ - Minor changes during target creation.
+ - Slight changes in the model convolution setup (conv-bn-relu instead of the original conv(with_bias)-relu-bn).
+ - Complete overhaul of inference pipeline with functionality of dumping 3D BBs projected on the image and dumping of labels in the KITTI evaluation toolkit expected format.
+ - Unit-tests for checking code functionality.
+
+TODO:
+ - [ ] Data augmentation (currently no data augmentation is there).
+ - [ ] Maybe some other stuff.
+
+Please note that I have not been able to achieve the same performance as claimed in the paper.
+I am still working on it. 
+
 # About Point Pillars
 Point Pillars is a very famous Deep Neural Network for 3D Object Detection for LiDAR point clouds. With the application of object detection on the LiDAR devices fitted in the self driving cars, Point Pillars focuse on fast inference ~50fps, which was magnitudes above as compared to other networks for 3D Object detection. In this repo, we are trying to develop point pillars in TensorFlow. [Here's](https://medium.com/@a_tyagi/pointpillars-3d-point-clouds-bounding-box-detection-and-tracking-pointnet-pointnet-lasernet-67e26116de5a?source=friends_link&sk=4a27f55f2cea645af39f72117984fd22) a good first post to familiarize yourself with Point Pillars. 
 
