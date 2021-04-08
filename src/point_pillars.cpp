@@ -81,7 +81,7 @@ pybind11::tuple createPillars(pybind11::array_t<float> points,
     pybind11::array_t<float> tensor;
     pybind11::array_t<int> indices;
 
-    tensor.resize({1, maxPillars, maxPointsPerPillar, 7});
+    tensor.resize({1, maxPillars, maxPointsPerPillar, 9});
     indices.resize({1, maxPillars, 3}); // Will hold the discretized indices of the pillar
 
     int pillarId = 0;
@@ -127,20 +127,25 @@ pybind11::tuple createPillars(pybind11::array_t<float> points,
         int pointId = 0;
         for (const auto& p: pair.second) // Iterating through all the points of current hash (pillar)
         {
+            // Point data population inside the pillar
             if (pointId >= maxPointsPerPillar)
             {
                 // Number of populated points exceeds the maximum allowed number of points per pillar
                 break;
             }
 
-            // Point data population inside the pillar
-            tensor.mutable_at(0, pillarId, pointId, 0) = p.x - (xIndex * xStep + xMin);
-            tensor.mutable_at(0, pillarId, pointId, 1) = p.y - (yIndex * yStep + yMin);
-            tensor.mutable_at(0, pillarId, pointId, 2) = p.z - zMid;
+            // Raw LiDAR point data
+            tensor.mutable_at(0, pillarId, pointId, 0) = p.x;
+            tensor.mutable_at(0, pillarId, pointId, 1) = p.y;
+            tensor.mutable_at(0, pillarId, pointId, 2) = p.z;
             tensor.mutable_at(0, pillarId, pointId, 3) = p.intensity;
+            // Distance from the aithrmetic mean
             tensor.mutable_at(0, pillarId, pointId, 4) = p.xc;
             tensor.mutable_at(0, pillarId, pointId, 5) = p.yc;
             tensor.mutable_at(0, pillarId, pointId, 6) = p.zc;
+            // Offset from the pillar center
+            tensor.mutable_at(0, pillarId, pointId, 7) = ((p.x - xMin) / xStep) - xIndex;
+            tensor.mutable_at(0, pillarId, pointId, 8) = ((p.y - yMin) / yStep) - yIndex;
 
             pointId++;
         }
@@ -521,8 +526,8 @@ std::tuple<pybind11::array_t<float>, int, int> createPillarsTarget(const pybind1
                         tensor.mutable_at(objectCount, xId, yId, anchorCount, 5) = std::log(labelBox.width / anchorBox.width);
                         tensor.mutable_at(objectCount, xId, yId, anchorCount, 6) = std::log(labelBox.height / anchorBox.height);
 
-                        tensor.mutable_at(objectCount, xId, yId, anchorCount, 7) = std::sin(labelBox.yaw - anchorBox.yaw); //delta yaw
-                        if (labelBox.yaw > 0) // Is yaw > 0
+                        tensor.mutable_at(objectCount, xId, yId, anchorCount, 7) = (labelBox.yaw - anchorBox.yaw); //delta yaw
+                        if (((-0.5 * M_PI) < labelBox.yaw) && (labelBox.yaw <= (0.5 * M_PI)))
                         {
                             tensor.mutable_at(objectCount, xId, yId, anchorCount, 8) = 1; 
                         }
@@ -577,8 +582,8 @@ std::tuple<pybind11::array_t<float>, int, int> createPillarsTarget(const pybind1
             tensor.mutable_at(objectCount, xId, yId, bestAnchorId, 5) = std::log(labelBox.width / bestAnchor.width);
             tensor.mutable_at(objectCount, xId, yId, bestAnchorId, 6) = std::log(labelBox.height / bestAnchor.height);
 
-            tensor.mutable_at(objectCount, xId, yId, bestAnchorId, 7) = std::sin(labelBox.yaw - bestAnchor.yaw);
-            if (labelBox.yaw > 0)
+            tensor.mutable_at(objectCount, xId, yId, bestAnchorId, 7) = (labelBox.yaw - bestAnchor.yaw);
+            if (((-0.5 * M_PI) < labelBox.yaw) && (labelBox.yaw <= (0.5 * M_PI)))
             {
                 tensor.mutable_at(objectCount, xId, yId, bestAnchorId, 8) = 1;
             }

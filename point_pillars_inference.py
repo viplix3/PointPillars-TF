@@ -124,11 +124,11 @@ def load_model_and_run_inference(configs):
         for idx in nms_indices:
             logging.debug("{:04d}: {}".format(idx, boxes[idx]))
 
-        prediction_in_kitti_format, bb_3d_corners = gather_boxes_in_kitti_format(boxes, nms_indices, P2, R0, Tr_velo_to_cam)
+        prediction_in_kitti_format, bb_3d_corners, bb_heading_info = gather_boxes_in_kitti_format(boxes, nms_indices, P2, R0, Tr_velo_to_cam)
 
         for idx in range(len(bb_3d_corners)):
             image_data = draw_projected_box3d(image_data, bb_3d_corners[idx], 
-                            color=BBox.bb_class_colour_map(prediction_in_kitti_format[idx][0]))
+                            color=BBox.bb_class_colour_map(prediction_in_kitti_format[idx][0]), heading=bb_heading_info[idx])
         cv2.imwrite(os.path.join(out_images_path, "{}.jpg".format(file_name)), image_data)
         dump_predictions(prediction_in_kitti_format, os.path.join(out_labels_path, "{}.txt".format(file_name)))
     
