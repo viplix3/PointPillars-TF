@@ -61,10 +61,10 @@ class BBox(Parameters, tuple):
         # model predicts angles w.r.t. z-axis in LiDAR coordinate frame
         # changing it to camera coordinate, where the angle is w.r.t y-axis
         # z-axis in LiDAR coordinate frame == -(y-axis) of camera coordinate frame
-        self.yaw = self.yaw + np.pi/2
+        self.yaw = - self.yaw - np.pi/2
 
         # if(int(self.heading) == 0):
-        #     self.yaw = 2*np.pi + self.yaw
+        #    self.yaw = - self.yaw
 
         bbox_2d_image_coordinate, bbox_3d_image_coordinate = self.get_2D_BBox(P2) # [num_boxes, box_attributes]
 
@@ -75,7 +75,8 @@ class BBox(Parameters, tuple):
 
         return [self.class_dict[self.cls], -1.0, -1, alpha, bbox_2d_image_coordinate[0][0], bbox_2d_image_coordinate[0][1],
                                             bbox_2d_image_coordinate[0][2], bbox_2d_image_coordinate[0][3],
-                                            self.height, self.width, self.length, self.x, self.y, self.z, self.yaw, self.conf], bbox_3d_image_coordinate 
+                                            self.height, self.width, self.length, self.x, self.y, self.z, self.yaw, self.conf], \
+                                            bbox_3d_image_coordinate, self.heading
 
 
     def get_2D_BBox(self, P: np.ndarray):
@@ -177,16 +178,16 @@ class BBox(Parameters, tuple):
         return bbox_2d_image, bbox_3d_image
 
 
-def draw_projected_box3d(image, qs, color=(255, 0, 255), thickness=2):
+def draw_projected_box3d(image, qs, heading, color=(255, 0, 255), thickness=2):
     ''' Draw 3d bounding box in image
         qs: (8,3) array of vertices for the 3d box in following order:
-            7 -------- 4
+            5 -------- 4
            /|         /|
-          6 -------- 5 .
+          6 -------- 7 .
           | |        | |
-          . 3 -------- 0
+          . 1 -------- 0
           |/         |/
-          2 -------- 1
+          2 -------- 3
     '''
     qs = np.squeeze(qs)
     qs = qs.astype(np.int32)
@@ -201,21 +202,27 @@ def draw_projected_box3d(image, qs, color=(255, 0, 255), thickness=2):
 
         i, j = k, k + 4
         cv.line(image, (qs[i, 0], qs[i, 1]), (qs[j, 0], qs[j, 1]), color, thickness)
+    if heading == 1:
+        cv.line(image, (qs[2, 0], qs[2, 1]), (qs[7, 0], qs[7, 1]), [255, 255, 0], thickness)
+    else:
+        cv.line(image, (qs[0, 0], qs[0, 1]), (qs[5, 0], qs[5, 1]), [255, 255, 0], thickness)
+
     return image    
 
 
 def gather_boxes_in_kitti_format(boxes: List[BBox], indices: List, P2: np.ndarray, R0: np.ndarray, Tr_velo_to_cam: np.ndarray):
     """ gathers boxes left after nms and converts them to kitti evaluation toolkit expected format """
     if len(indices) == 0:
-        return [], []
-    bb_3d_corners, kitti_format_bb = [], []
+        return [], [], []
+    bb_3d_corners, kitti_format_bb, bb_heading_info = [], [], []
 
     for idx in indices:
-        bb_kitti, bb_3d = boxes[idx].to_kitti_format(P2, R0, Tr_velo_to_cam)
+        bb_kitti, bb_3d, bb_heading = boxes[idx].to_kitti_format(P2, R0, Tr_velo_to_cam)
         bb_3d_corners.append(bb_3d)
         kitti_format_bb.append(bb_kitti)
+        bb_heading_info.append(bb_heading)
 
-    return kitti_format_bb, bb_3d_corners
+    return kitti_format_bb, bb_3d_corners, bb_heading_info
 
 
 def dump_predictions(predictions: List, file_path: str):
@@ -283,7 +290,7 @@ def generate_bboxes_from_pred(occ, pos, siz, ang, hdg, clf, anchor_dims, occ_thr
         bb_length = np.exp(siz[value][0]) * real_anchors[i][0]
         bb_width = np.exp(siz[value][1]) * real_anchors[i][1]
         bb_height = np.exp(siz[value][2]) * real_anchors[i][2]
-        bb_yaw = -np.arcsin(np.clip(ang[value], -1, 1)) + real_anchors[i][4]
+        bb_yaw = ang[value] + real_anchors[i][4]
         bb_heading = np.round(hdg[value])
         bb_cls = np.argmax(softmax(clf[value]))
         bb_conf = occ[value]

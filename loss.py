@@ -61,9 +61,18 @@ class PointPillarNetworkLoss:
         masked_loss = tf.boolean_mask(loss, mask)
         return self.size_weight * tf.reduce_mean(masked_loss)
 
+    def add_sin_difference(self, y_true, y_pred, factor=1.0):
+        if factor != 1.0:
+            y_true = factor * y_true
+            y_pred = factor * y_pred
+        rad_pred_encoding = tf.math.sin(y_pred) * tf.math.cos(y_true)
+        rad_tg_encoding = tf.math.cos(y_pred) * tf.math.sin(y_true)
+        return rad_tg_encoding, rad_pred_encoding
+
     def angle_loss(self, y_true: tf.Tensor, y_pred: tf.Tensor):
+        y_true, y_pred = self.add_sin_difference(y_true, y_pred)
         loss = tf.compat.v1.losses.huber_loss(y_true,
-                                    y_pred,
+                                    y_pred, delta=3.0,
                                     reduction="none")
 
         masked_loss = tf.boolean_mask(loss, self.mask)
