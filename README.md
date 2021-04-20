@@ -11,6 +11,7 @@ Major changes in this repo compared to the original one:
  - Unit-tests for checking code functionality.
 
 TODO:
+ - [ ] Correction of observation angle calculation during inference
  - [ ] Data augmentation (currently no data augmentation is there).
  - [ ] Maybe some other stuff.
 
@@ -40,7 +41,7 @@ Download the LiDAR, Calibration and Label_2 **zip** files from the [Kitti datase
 After placing the Kitti dataset in the root directory, run the following code
 
 ```
-git clone --recurse-submodules https://github.com/tyagi-iiitv/PointPillars.git
+git clone --recurse-submodules https://github.com/viplix3/PointPillars-TF.git
 virtualenv --python=/usr/bin/python3.8 env
 source ./env/bin/activate
 pip install tensorflow-gpu tensorflow_probability sklearn opencv-python
