@@ -10,11 +10,6 @@ Major changes in this repo compared to the original one:
  - Complete overhaul of inference pipeline with functionality of dumping 3D BBs projected on the image and dumping of labels in the KITTI evaluation toolkit expected format.
  - Unit-tests for checking code functionality.
 
-TODO:
- - [ ] Correction of observation angle calculation during inference
- - [ ] Data augmentation (currently no data augmentation is there).
- - [ ] Maybe some other stuff.
-
 Please note that I have not been able to achieve the same performance as claimed in the paper.
 I am still working on it. 
 
