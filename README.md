@@ -11,8 +11,9 @@ Major changes in this repo compared to the original one:
  - Unit-tests for checking code functionality.
 
 Please note that I have not been able to achieve the same performance as claimed in the paper.
-I am still working on it. 
 
+
+# Original README Contents below
 # About Point Pillars
 Point Pillars is a very famous Deep Neural Network for 3D Object Detection for LiDAR point clouds. With the application of object detection on the LiDAR devices fitted in the self driving cars, Point Pillars focuse on fast inference ~50fps, which was magnitudes above as compared to other networks for 3D Object detection. In this repo, we are trying to develop point pillars in TensorFlow. [Here's](https://medium.com/@a_tyagi/pointpillars-3d-point-clouds-bounding-box-detection-and-tracking-pointnet-pointnet-lasernet-67e26116de5a?source=friends_link&sk=4a27f55f2cea645af39f72117984fd22) a good first post to familiarize yourself with Point Pillars. 
 
