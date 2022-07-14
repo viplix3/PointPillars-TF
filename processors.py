@@ -2,7 +2,7 @@ from typing import List
 import numpy as np
 import tensorflow as tf
 
-from tensorflow.python.keras.utils.data_utils import Sequence
+from tensorflow.keras.utils import Sequence
 
 from config import Parameters
 from point_pillars import createPillars, createPillarsTarget

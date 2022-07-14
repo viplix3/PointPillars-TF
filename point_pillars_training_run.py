@@ -4,7 +4,6 @@ import logging
 import argparse
 import numpy as np
 import tensorflow as tf
-from glob import glob
 from easydict import EasyDict as edict
 
 from config import Parameters
@@ -18,7 +17,7 @@ from train_utils import parse_data_ids, parse_data_from_ids
 
 def generate_config_from_cmd_args():
     parser = argparse.ArgumentParser(description='PointPillars training')
-    parser.add_argument('--gpu_idx', default=9, type=int, required=False, 
+    parser.add_argument('--gpu_idx', default=0, type=int, required=False, 
         help='GPU index to use for inference')
     parser.add_argument('--imageset_path', default=None, type=str, required=True,
         help='Path to the root folder containing train_img_ids.txt and val_img_ids.txt')
@@ -51,7 +50,7 @@ def train_PillarNet(configs):
         logging.info("No pre-trained weights found. Initializing weights and training model.")
 
     loss = PointPillarNetworkLoss(params)
-    optimizer = tf.keras.optimizers.Adam(lr=params.learning_rate, decay=params.decay_rate)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=params.learning_rate, decay=params.decay_rate)
     pillar_net.compile(optimizer, loss=loss.losses())
     data_reader = KittiDataReader()
 

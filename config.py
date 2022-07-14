@@ -55,13 +55,14 @@ class NetworkParameters:
                             [3.9, 1.6, 1.56, -1, 1.5708], # car-anchor rotated by 90 degrees
                             [0.8, 0.6, 1.73, -0.6, 0], # pedestrian-anchor
                             [0.8, 0.6, 1.73, -0.6, 1.5708], # pedestrian-anchor rotated by 90 degrees
+                            [1.76, 0.6, 1.73, -0.6, 0], # cyclist-anchor rotated by 90 degrees
+                            [1.76, 0.6, 1.73, -0.6, 1.5708], # cyclist-anchor rotated by 90 degrees
                             ], dtype=np.float32).tolist()
-    # TODO: Add cyclist anchor
     nb_dims = 3
 
     positive_iou_threshold = 0.6
     negative_iou_threshold = 0.3
-    batch_size = 4
+    batch_size = 3
     total_training_epochs = 160
     iters_to_decay = 66780 # 101040.    # 15 * 4 * ceil(6733. / 4) --> every 15 epochs on 6733 kitti samples, cf. pillar paper
     learning_rate = 2e-4
