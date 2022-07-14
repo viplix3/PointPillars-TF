@@ -38,12 +38,7 @@ After placing the Kitti dataset in the root directory, run the following code
 
 ```
 git clone --recurse-submodules https://github.com/viplix3/PointPillars-TF.git
-virtualenv --python=/usr/bin/python3.8 env
-source ./env/bin/activate
-pip install tensorflow-gpu tensorflow_probability sklearn opencv-python
-cd PointPillars
-python setup.py install
-python point_pillars_training_run.py
+conda create -n PointPillarsDevEnv --file PointPillarsDevEnv.yml
 ```
 
 # Deploy on a cloud notebook instance (Amazon SageMaker etc.)
