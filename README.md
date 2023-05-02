@@ -37,6 +37,7 @@ After placing the Kitti dataset in the root directory, run the following code
 ```
 git clone --recurse-submodules https://github.com/viplix3/PointPillars-TF.git
 conda env create -f PointPillarsDevEnv.yml
+conda activate PointPillarsDevEnv
 python setup.py install
 ```
 
